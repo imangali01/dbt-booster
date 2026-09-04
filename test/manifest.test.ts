@@ -91,6 +91,61 @@ describe('buildLineageSubgraph', () => {
     expect(g.nodes.map((n) => n.id)).toEqual(['model.p.a']);
   });
 
+  it('expands one extra upstream level from a frontier node', () => {
+    // base depth 1/1 around c -> {b, c, d}; b still has hidden upstream (a)
+    const base = buildLineageSubgraph(chain, 'model.p.c', 1, 1);
+    expect(base.nodes.find((n) => n.id === 'model.p.b')?.hasHiddenUpstream).toBe(true);
+
+    const expanded = buildLineageSubgraph(chain, 'model.p.c', 1, 1, {
+      expandUpstream: ['model.p.b'],
+    });
+    expect(expanded.nodes.map((n) => n.id).sort()).toEqual([
+      'model.p.a',
+      'model.p.b',
+      'model.p.c',
+      'model.p.d',
+    ]);
+    expect(expanded.nodes.find((n) => n.id === 'model.p.a')?.relation).toBe('upstream');
+    expect(expanded.nodes.find((n) => n.id === 'model.p.b')?.hasHiddenUpstream).toBe(false);
+    // the centre did not move
+    expect(expanded.nodes.find((n) => n.id === 'model.p.c')?.relation).toBe('centre');
+  });
+
+  it('applies chained expansions in order', () => {
+    const five = manifestOf(
+      model('a'),
+      model('b', ['a']),
+      model('c', ['b']),
+      model('d', ['c']),
+      model('e', ['d']),
+    );
+    // centre e, base 1/1 -> {d, e}; expand d then c
+    const g = buildLineageSubgraph(five, 'model.p.e', 1, 1, {
+      expandUpstream: ['model.p.d', 'model.p.c'],
+    });
+    expect(g.nodes.map((n) => n.id).sort()).toEqual([
+      'model.p.b',
+      'model.p.c',
+      'model.p.d',
+      'model.p.e',
+    ]);
+  });
+
+  it('ignores expansion of a node that is not visible', () => {
+    const g = buildLineageSubgraph(chain, 'model.p.c', 1, 1, {
+      expandUpstream: ['model.p.e'],
+    });
+    expect(g.nodes.map((n) => n.id).sort()).toEqual(['model.p.b', 'model.p.c', 'model.p.d']);
+  });
+
+  it('expands one extra downstream level from a frontier node', () => {
+    const g = buildLineageSubgraph(chain, 'model.p.c', 1, 1, {
+      expandDownstream: ['model.p.d'],
+    });
+    expect(g.nodes.map((n) => n.id)).toContain('model.p.e');
+    expect(g.nodes.find((n) => n.id === 'model.p.e')?.relation).toBe('downstream');
+  });
+
   it('includes sources as upstream nodes', () => {
     const m: DbtManifest = {
       nodes: { 'model.p.a': model('a', []) },

@@ -16,6 +16,8 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
 
   private view: vscode.WebviewView | undefined;
   private centreOverride: string | undefined;
+  private expandUpstream: string[] = [];
+  private expandDownstream: string[] = [];
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -25,7 +27,7 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
   ) {
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor(() => {
-        this.centreOverride = undefined;
+        this.resetView();
         this.render();
       }),
       this.store.onDidChange(() => this.render()),
@@ -81,9 +83,27 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
         void this.openNodeFile(msg.nodeId);
         break;
       case 'recentre':
+        this.resetView();
         this.centreOverride = msg.nodeId;
         this.render();
         break;
+      case 'expand':
+        this.expand(msg.nodeId, msg.direction);
+        this.render();
+        break;
+    }
+  }
+
+  private resetView(): void {
+    this.centreOverride = undefined;
+    this.expandUpstream = [];
+    this.expandDownstream = [];
+  }
+
+  private expand(nodeId: string, direction: 'upstream' | 'downstream'): void {
+    const list = direction === 'upstream' ? this.expandUpstream : this.expandDownstream;
+    if (!list.includes(nodeId)) {
+      list.push(nodeId);
     }
   }
 
@@ -96,7 +116,10 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
       this.post({ type: 'empty', reason: this.emptyReason() });
       return;
     }
-    const graph = this.store.lineageAround(centreId, UPSTREAM_DEPTH, DOWNSTREAM_DEPTH);
+    const graph = this.store.lineageAround(centreId, UPSTREAM_DEPTH, DOWNSTREAM_DEPTH, {
+      expandUpstream: this.expandUpstream,
+      expandDownstream: this.expandDownstream,
+    });
     if (graph.nodes.length === 0) {
       this.post({
         type: 'empty',

@@ -6,6 +6,7 @@ import {
   normaliseManifest,
   resolveNodeIdForFile,
   type DbtManifest,
+  type LineageExpansion,
   type LineageGraph,
 } from './manifest';
 import { runDbt } from './dbtTerminal';
@@ -106,11 +107,22 @@ export class ManifestStore implements vscode.Disposable {
   }
 
   /** Lineage subgraph around a node id; empty graph when no manifest is loaded. */
-  lineageAround(centreId: string, upstreamDepth: number, downstreamDepth: number): LineageGraph {
+  lineageAround(
+    centreId: string,
+    upstreamDepth: number,
+    downstreamDepth: number,
+    expansion: LineageExpansion = {},
+  ): LineageGraph {
     if (!this.manifest) {
       return { nodes: [], edges: [] };
     }
-    return buildLineageSubgraph(this.manifest, centreId, upstreamDepth, downstreamDepth);
+    return buildLineageSubgraph(
+      this.manifest,
+      centreId,
+      upstreamDepth,
+      downstreamDepth,
+      expansion,
+    );
   }
 
   private promptParse(root: string): void {

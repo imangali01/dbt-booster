@@ -26,14 +26,40 @@ function LineageNode({ data }: NodeProps): JSX.Element {
   const classes = ['ln-node', `ln-${d.resourceType}`, d.isCentre ? 'ln-centre' : '']
     .filter(Boolean)
     .join(' ');
+
+  const expand = (event: React.MouseEvent, direction: 'upstream' | 'downstream'): void => {
+    event.stopPropagation();
+    vscode.postMessage({ type: 'expand', nodeId: d.nodeId, direction });
+  };
+
   return (
     <div className={classes} title={d.label}>
       <Handle type="target" position={Position.Left} />
+      {d.hasHiddenUpstream ? (
+        <button
+          type="button"
+          className="ln-expand ln-expand-up"
+          title="Show one more upstream level"
+          onClick={(event) => expand(event, 'upstream')}
+        >
+          +
+        </button>
+      ) : null}
       <div className="ln-node-title">{d.label}</div>
       <div className="ln-node-meta">
         <span className="ln-badge ln-badge-type">{d.resourceType}</span>
         {d.materialized ? <span className="ln-badge">{d.materialized}</span> : null}
       </div>
+      {d.hasHiddenDownstream ? (
+        <button
+          type="button"
+          className="ln-expand ln-expand-down"
+          title="Show one more downstream level"
+          onClick={(event) => expand(event, 'downstream')}
+        >
+          +
+        </button>
+      ) : null}
       <Handle type="source" position={Position.Right} />
     </div>
   );

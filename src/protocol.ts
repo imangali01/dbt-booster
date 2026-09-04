@@ -9,4 +9,5 @@ export type ExtensionToWebview =
 export type WebviewToExtension =
   | { type: 'ready' }
   | { type: 'openFile'; nodeId: string }
-  | { type: 'recentre'; nodeId: string };
+  | { type: 'recentre'; nodeId: string }
+  | { type: 'expand'; nodeId: string; direction: 'upstream' | 'downstream' };

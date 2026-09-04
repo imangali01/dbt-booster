@@ -6,10 +6,13 @@ export const NODE_WIDTH = 180;
 export const NODE_HEIGHT = 52;
 
 export interface LineageNodeData extends Record<string, unknown> {
+  nodeId: string;
   label: string;
   resourceType: string;
   materialized?: string;
   isCentre: boolean;
+  hasHiddenUpstream: boolean;
+  hasHiddenDownstream: boolean;
 }
 
 /** Lay the lineage graph out left-to-right with dagre; upstream ends up on the left. */
@@ -37,10 +40,13 @@ export function layoutLineage(graph: LineageGraph): {
       type: 'lineage',
       position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
       data: {
+        nodeId: node.id,
         label: node.name,
         resourceType: node.resourceType,
         materialized: node.materialized,
         isCentre: node.relation === 'centre',
+        hasHiddenUpstream: node.hasHiddenUpstream,
+        hasHiddenDownstream: node.hasHiddenDownstream,
       },
     };
   });
