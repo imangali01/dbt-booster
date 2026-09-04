@@ -88,7 +88,7 @@ src/
 test/                     vitest — one file per pure module
 sample/jaffle/            minimal dbt project + hand-written target/manifest.json fixture
                           (customers ← orders) so features work without a real dbt run
-media/lineage.svg         panel container icon
+media/dbt-logo.png        extension marketplace icon + Lineage panel container icon
 esbuild.mjs               dual build: out/extension.js (node/cjs) + out/webview.js+css (browser/esm)
 .scratch/dbt-booster/issues/   the 8 tickets; each carries a Status + Notes section
 ```
@@ -137,14 +137,16 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 11 | Python environment picker (status bar) | ✅ done (v0.0.12) |
 | 12 | Preview UX polish + configurable row limit | ✅ done (v0.0.13) |
 | 13 | Lineage node colour from `dbt_project.yml` | ✅ done (v0.0.14) |
+| 14 | Extension icon + Lineage panel icon | ✅ done (v0.0.15) |
 
-The original 8-ticket backlog is complete; 09–13 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–14 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
 motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 55 vitest
-tests passing. Branch `main`, 16 commits, nothing pushed. Anything past this point (marketplace
-publish, more features) needs a fresh scope discussion with the user — there is no ticket 14 yet.
+tests passing. Branch `main`, 17 commits, nothing pushed. A schema.yml doc/test editor (next to
+the Lineage panel) is under discussion with the user — see the conversation, not yet a ticket.
+Anything past this point needs scope agreed with the user first.
 
 ## Stack
 
