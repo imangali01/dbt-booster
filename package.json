@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "MIT",
   "publisher": "imangali01",
   "repository": {
@@ -41,6 +41,24 @@
         "title": "Refresh Lineage",
         "category": "dbt booster",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "dbtBooster.runModel",
+        "title": "Run Model",
+        "category": "dbt booster",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dbtBooster.testModel",
+        "title": "Test Model",
+        "category": "dbt booster",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "dbtBooster.buildModel",
+        "title": "Build Model",
+        "category": "dbt booster",
+        "icon": "$(package)"
       }
     ],
     "menus": {
@@ -60,6 +78,18 @@
         {
           "command": "dbtBooster.refreshLineage",
           "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.runModel",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.testModel",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.buildModel",
+          "when": "dbtBooster.projectDetected"
         }
       ],
       "view/title": [
@@ -67,6 +97,23 @@
           "command": "dbtBooster.refreshLineage",
           "when": "view == dbtBooster.lineage",
           "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "dbtBooster.runModel",
+          "when": "resourceExtname == .sql && dbtBooster.projectDetected",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dbtBooster.testModel",
+          "when": "resourceExtname == .sql && dbtBooster.projectDetected",
+          "group": "navigation@2"
+        },
+        {
+          "command": "dbtBooster.buildModel",
+          "when": "resourceExtname == .sql && dbtBooster.projectDetected",
+          "group": "navigation@3"
         }
       ]
     },

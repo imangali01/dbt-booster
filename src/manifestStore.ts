@@ -97,6 +97,12 @@ export class ManifestStore implements vscode.Disposable {
     return resolveNodeIdForFile(this.manifest, rel, CASE_INSENSITIVE);
   }
 
+  /** Model name for an on-disk file (for `dbt <cmd> --select <name>`), if resolvable. */
+  resolveModelName(fileFsPath: string): string | undefined {
+    const id = this.resolveModelId(fileFsPath);
+    return id ? this.manifest?.nodes[id]?.name : undefined;
+  }
+
   /** Absolute on-disk path for a node id (model or source), if it has one. */
   absolutePathForNode(id: string): string | undefined {
     const node = this.manifest?.nodes[id] ?? this.manifest?.sources[id];

@@ -4,6 +4,7 @@ import { ProjectRegistry } from './projectRegistry';
 import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
+import { runModelAction } from './modelActions';
 
 let output: vscode.OutputChannel | undefined;
 
@@ -65,6 +66,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       );
     }),
     vscode.commands.registerCommand('dbtBooster.refreshLineage', () => lineagePanel.refresh()),
+    vscode.commands.registerCommand('dbtBooster.runModel', () =>
+      runModelAction('run', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.testModel', () =>
+      runModelAction('test', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.buildModel', () =>
+      runModelAction('build', manifestStore),
+    ),
   );
 
   await registry.refresh();
