@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDbtShowOutput } from '../src/dbtShowParser';
+import { numericColumns, parseDbtShowOutput } from '../src/dbtShowParser';
 
 describe('parseDbtShowOutput', () => {
   it('parses an array-of-rows shape wrapped in "show"', () => {
@@ -81,5 +81,31 @@ describe('parseDbtShowOutput', () => {
       rows: [],
       message: 'dbt show produced no output.',
     });
+  });
+});
+
+describe('numericColumns', () => {
+  it('flags a column where every cell is a number', () => {
+    const result = { columns: ['id', 'name'], rows: [[1, 'a'], [2, 'b']] };
+    expect(numericColumns(result)).toEqual([true, false]);
+  });
+
+  it('treats a mixed column as non-numeric', () => {
+    const result = { columns: ['x'], rows: [[1], ['two']] };
+    expect(numericColumns(result)).toEqual([false]);
+  });
+
+  it('ignores null/undefined cells when deciding', () => {
+    const result = { columns: ['x'], rows: [[1], [null], [3]] };
+    expect(numericColumns(result)).toEqual([true]);
+  });
+
+  it('treats an all-null column as non-numeric', () => {
+    const result = { columns: ['x'], rows: [[null], [undefined]] };
+    expect(numericColumns(result)).toEqual([false]);
+  });
+
+  it('handles zero rows', () => {
+    expect(numericColumns({ columns: ['a', 'b'], rows: [] })).toEqual([false, false]);
   });
 });

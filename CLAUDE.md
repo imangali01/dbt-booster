@@ -28,8 +28,10 @@ These were settled with the user during a grilling session. Honour them.
   any other action without the user asking again.
 - **dbt resolves its own `profiles.yml`.** Never pass `--profiles-dir` or `--target`. No `.env`
   loading, no environment shims.
-- **One user setting only: `dbtBooster.dbtPath`** (default `dbt`). Everything else is a
-  hardcoded constant: lineage depth = 2 up / 2 down, preview limit = 500 rows.
+- **One user setting only: `dbtBooster.dbtPath`** (default `dbt`). Lineage depth (2 up / 2 down)
+  is a hardcoded constant. Preview's row limit is **not** hardcoded any more (ticket 12, same
+  pattern as ticket 10's exception): Preview prompts for it every run, defaulting to 20
+  (`DEFAULT_PREVIEW_LIMIT` in `dbtShow.ts`).
 - **No CSV / download / export** anywhere in the preview UI.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
   as a background process (not in the terminal) so its JSON output can be parsed.
@@ -46,7 +48,8 @@ src/
   projectRegistry.ts      GLUE  ProjectRegistry — discover dbt_project.yml, track active root,
                                 context keys dbtBooster.projectDetected / .multipleProjects
   manifest.ts             PURE  buildLineageSubgraph (depth-limited BFS + "＋" expansion,
-                                cycle-safe), resolveNodeIdForFile (original_file_path → stem),
+                                cycle-safe, carries config.docs.node_color through),
+                                resolveNodeIdForFile (original_file_path → stem),
                                 countModels, normaliseManifest, all the Lineage* types
   manifestStore.ts        GLUE  ManifestStore — load target/manifest.json, RelativePattern
                                 watcher, missing-manifest "Run dbt parse" prompt,
@@ -62,10 +65,12 @@ src/
                                 that from the active editor for the title-bar buttons/palette;
                                 runModelWithScope/runActiveModelWithScope add the Run-variants
                                 dropdown's +model / model+ selectors (Run button only)
-  dbtShow.ts              GLUE  runDbtShow(model, cwd) — `dbt show --output json` as a background
-                                child_process (not the terminal), for Preview
+  dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) — `dbt show --output json` as a
+                                background child_process (not the terminal), for Preview;
+                                DEFAULT_PREVIEW_LIMIT = 20
   dbtShowParser.ts        PURE  parseDbtShowOutput() — extracts columns/rows from `dbt show` JSON
-                                output, tolerant of surrounding plain or structured-JSON log lines
+                                output, tolerant of surrounding plain or structured-JSON log
+                                lines; numericColumns() — which columns to right-align
   previewPanel.ts         GLUE  showPreview(model, root) — editor-area WebviewPanel, re-created per
                                 run, self-contained HTML/CSS/JS sortable table (no React needed)
   lineagePanelProvider.ts GLUE  LineagePanelProvider — WebviewViewProvider for the panel;
@@ -130,14 +135,16 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 09 | Lineage panel — draggable nodes | ✅ done (v0.0.9) |
 | 10 | Run-variants dropdown (`+model` / `model+`) | ✅ done (v0.0.11) |
 | 11 | Python environment picker (status bar) | ✅ done (v0.0.12) |
+| 12 | Preview UX polish + configurable row limit | ✅ done (v0.0.13) |
+| 13 | Lineage node colour from `dbt_project.yml` | ✅ done (v0.0.14) |
 
-The original 8-ticket backlog is complete; 09–11 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–13 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
-motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 49 vitest
-tests passing. Branch `main`, 14 commits, nothing pushed. Anything past this point (marketplace
-publish, more features) needs a fresh scope discussion with the user — there is no ticket 12 yet.
+motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 55 vitest
+tests passing. Branch `main`, 16 commits, nothing pushed. Anything past this point (marketplace
+publish, more features) needs a fresh scope discussion with the user — there is no ticket 14 yet.
 
 ## Stack
 

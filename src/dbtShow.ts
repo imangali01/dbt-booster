@@ -1,7 +1,8 @@
 import { spawn } from 'child_process';
 import { dbtCommand } from './dbtTerminal';
 
-const PREVIEW_LIMIT = 500;
+/** Row limit offered when the user is asked how much to preview. */
+export const DEFAULT_PREVIEW_LIMIT = 20;
 
 /**
  * Split a configured `dbtBooster.dbtPath` like `dbt`, `C:\...\dbt.exe`, or
@@ -17,7 +18,7 @@ function splitCommand(command: string): [program: string, leadingArgs: string[]]
 }
 
 /**
- * Run `dbt show --select <model> --limit 500 --output json` as a background
+ * Run `dbt show --select <model> --limit <limit> --output json` as a background
  * process (not the shared terminal) so its output can be parsed. Resolves with
  * the combined stdout+stderr text; never rejects — a launch failure (including
  * "command not found") is folded into a readable message so callers can hand
@@ -30,7 +31,11 @@ function splitCommand(command: string): [program: string, leadingArgs: string[]]
  * real problem. Spawning the program directly gives a clean Node-level
  * `ENOENT` we can turn into an actionable message instead.
  */
-export function runDbtShow(modelName: string, cwd: string): Promise<string> {
+export function runDbtShow(
+  modelName: string,
+  cwd: string,
+  limit: number = DEFAULT_PREVIEW_LIMIT,
+): Promise<string> {
   return new Promise((resolve) => {
     const [program, leadingArgs] = splitCommand(dbtCommand());
     const args = [
@@ -39,7 +44,7 @@ export function runDbtShow(modelName: string, cwd: string): Promise<string> {
       '--select',
       modelName,
       '--limit',
-      String(PREVIEW_LIMIT),
+      String(limit),
       '--output',
       'json',
     ];

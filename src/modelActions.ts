@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ManifestStore } from './manifestStore';
 import { runDbt } from './dbtTerminal';
 import { showPreview } from './previewPanel';
+import { DEFAULT_PREVIEW_LIMIT } from './dbtShow';
 
 export type DbtAction = 'run' | 'test' | 'build' | 'preview';
 
@@ -35,10 +36,27 @@ function selectorFor(name: string, scope: RunScope): string {
  */
 export function performModelAction(action: DbtAction, name: string, projectRoot: string): void {
   if (action === 'preview') {
-    void showPreview(name, projectRoot);
+    void previewWithLimitPrompt(name, projectRoot);
   } else {
     runDbt([action, '--select', name], projectRoot);
   }
+}
+
+/** Ask how many rows to preview (defaulting to {@link DEFAULT_PREVIEW_LIMIT}), then run it. */
+async function previewWithLimitPrompt(name: string, projectRoot: string): Promise<void> {
+  const entered = await vscode.window.showInputBox({
+    title: `dbt booster: Preview "${name}"`,
+    prompt: 'Row limit',
+    value: String(DEFAULT_PREVIEW_LIMIT),
+    validateInput: (value) => {
+      const n = Number(value);
+      return Number.isInteger(n) && n > 0 ? undefined : 'Enter a positive whole number';
+    },
+  });
+  if (entered === undefined) {
+    return; // cancelled
+  }
+  void showPreview(name, projectRoot, Number(entered));
 }
 
 /** Run `dbt run --select <selector>` for `name`, widened per `scope`. */

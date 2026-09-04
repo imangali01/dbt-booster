@@ -1,14 +1,19 @@
 import * as vscode from 'vscode';
 import { runDbtShow } from './dbtShow';
-import { parseDbtShowOutput, type DbtShowResult } from './dbtShowParser';
+import { numericColumns, parseDbtShowOutput, type DbtShowResult } from './dbtShowParser';
 
 let panel: vscode.WebviewPanel | undefined;
 
 /**
- * Run a bounded preview of `modelName` and show the rows in a webview panel in
- * the editor area. The panel is re-created (not reused) on every run.
+ * Run a bounded preview of `modelName` (up to `limit` rows) and show the rows
+ * in a webview panel in the editor area. The panel is re-created (not reused)
+ * on every run.
  */
-export async function showPreview(modelName: string, projectRoot: string): Promise<void> {
+export async function showPreview(
+  modelName: string,
+  projectRoot: string,
+  limit: number,
+): Promise<void> {
   panel?.dispose();
   const current = vscode.window.createWebviewPanel(
     'dbtBooster.preview',
@@ -22,17 +27,22 @@ export async function showPreview(modelName: string, projectRoot: string): Promi
       panel = undefined;
     }
   });
-  current.webview.html = render(modelName, undefined, 'Running preview…');
+  current.webview.html = render(modelName, limit, undefined, 'Running preview…');
 
-  const raw = await runDbtShow(modelName, projectRoot);
+  const raw = await runDbtShow(modelName, projectRoot, limit);
   if (panel !== current) {
     return; // superseded by a newer preview or closed while dbt was running
   }
   const result = parseDbtShowOutput(raw);
-  current.webview.html = render(modelName, result);
+  current.webview.html = render(modelName, limit, result);
 }
 
-function render(modelName: string, result: DbtShowResult | undefined, loading?: string): string {
+function render(
+  modelName: string,
+  limit: number,
+  result: DbtShowResult | undefined,
+  loading?: string,
+): string {
   const nonce = getNonce();
   const body = loading !== undefined ? loadingBody(loading) : resultBody(result!);
   return `<!DOCTYPE html>
@@ -44,20 +54,23 @@ function render(modelName: string, result: DbtShowResult | undefined, loading?: 
 <title>Preview: ${escapeHtml(modelName)}</title>
 <style>
   body { margin: 0; padding: 12px 16px; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size, 13px); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }
-  h1 { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
+  h1 { font-size: 13px; font-weight: 600; margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px; }
+  .limit-badge { font-size: 11px; font-weight: 400; opacity: 0.6; }
   .message { opacity: 0.75; padding: 8px 0; }
   .error { color: var(--vscode-errorForeground, #f14c4c); white-space: pre-wrap; }
   table { border-collapse: collapse; width: 100%; }
   th, td { border: 1px solid var(--vscode-panel-border, #454545); padding: 4px 8px; text-align: left; font-size: 12px; white-space: nowrap; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
   th { cursor: pointer; user-select: none; background: var(--vscode-editorWidget-background, #252526); position: sticky; top: 0; }
   th:hover { background: var(--vscode-list-hoverBackground, #2a2d2e); }
   th .arrow { opacity: 0.6; margin-left: 4px; }
-  tbody tr:nth-child(even) { background: var(--vscode-editor-selectionBackground, rgba(255,255,255,0.03)); }
+  tbody tr:nth-child(even) { background: rgba(128, 128, 128, 0.08); }
+  tbody tr:hover { background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.16)); }
   .table-wrap { overflow: auto; max-height: calc(100vh - 60px); }
 </style>
 </head>
 <body>
-<h1>Preview: ${escapeHtml(modelName)}</h1>
+<h1>Preview: ${escapeHtml(modelName)} <span class="limit-badge">limit ${limit}</span></h1>
 ${body}
 <script nonce="${nonce}">
 (function () {
@@ -110,13 +123,17 @@ function resultBody(result: DbtShowResult): string {
   if (result.rows.length === 0) {
     return `<div class="message">Query returned 0 rows.</div>`;
   }
-  const head = result.columns.map((col) => `<th>${escapeHtml(col)}</th>`).join('');
+  const numeric = numericColumns(result);
+  const head = result.columns
+    .map((col, i) => `<th${numeric[i] ? ' class="num"' : ''}>${escapeHtml(col)}</th>`)
+    .join('');
   const rows = result.rows
     .map((row) => {
       const cells = row
-        .map((value) => {
+        .map((value, i) => {
           const text = formatCell(value);
-          return `<td data-raw="${escapeHtml(text)}">${escapeHtml(text)}</td>`;
+          const cls = numeric[i] ? ' class="num"' : '';
+          return `<td${cls} data-raw="${escapeHtml(text)}">${escapeHtml(text)}</td>`;
         })
         .join('');
       return `<tr>${cells}</tr>`;

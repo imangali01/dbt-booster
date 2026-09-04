@@ -66,6 +66,28 @@ function rowsFromObjects(items: unknown[]): DbtShowResult | undefined {
   return { ok: true, columns, rows };
 }
 
+/**
+ * Which columns contain only numbers (ignoring null/undefined cells) — used to
+ * right-align them in the preview table. A column with no numbers at all (or
+ * no rows) is not numeric.
+ */
+export function numericColumns(result: Pick<DbtShowResult, 'columns' | 'rows'>): boolean[] {
+  return result.columns.map((_, colIndex) => {
+    let sawNumber = false;
+    for (const row of result.rows) {
+      const value = row[colIndex];
+      if (value === null || value === undefined) {
+        continue;
+      }
+      if (typeof value !== 'number') {
+        return false;
+      }
+      sawNumber = true;
+    }
+    return sawNumber;
+  });
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
