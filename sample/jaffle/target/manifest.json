@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "project_name": "jaffle_sample"
+  },
+  "nodes": {
+    "model.jaffle_sample.customers": {
+      "unique_id": "model.jaffle_sample.customers",
+      "name": "customers",
+      "resource_type": "model",
+      "package_name": "jaffle_sample",
+      "original_file_path": "models/customers.sql",
+      "config": { "materialized": "view" },
+      "depends_on": { "macros": [], "nodes": [] }
+    },
+    "model.jaffle_sample.orders": {
+      "unique_id": "model.jaffle_sample.orders",
+      "name": "orders",
+      "resource_type": "model",
+      "package_name": "jaffle_sample",
+      "original_file_path": "models/orders.sql",
+      "config": { "materialized": "table" },
+      "depends_on": { "macros": [], "nodes": ["model.jaffle_sample.customers"] }
+    }
+  },
+  "sources": {},
+  "macros": {},
+  "docs": {},
+  "exposures": {},
+  "metrics": {},
+  "groups": {},
+  "selectors": {},
+  "disabled": {},
+  "parent_map": {},
+  "child_map": {}
+}

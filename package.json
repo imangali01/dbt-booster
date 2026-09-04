@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "publisher": "imangali01",
   "repository": {
@@ -30,6 +30,11 @@
         "command": "dbtBooster.showActiveProject",
         "title": "Show Active Project",
         "category": "dbt booster"
+      },
+      {
+        "command": "dbtBooster.showModelCount",
+        "title": "Show Model Count",
+        "category": "dbt booster"
       }
     ],
     "menus": {
@@ -40,6 +45,10 @@
         },
         {
           "command": "dbtBooster.showActiveProject",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.showModelCount",
           "when": "dbtBooster.projectDetected"
         }
       ]

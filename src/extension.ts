@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ProjectRegistry } from './projectRegistry';
+import { ManifestStore } from './manifestStore';
+import { disposeDbtTerminal } from './dbtTerminal';
 
 let output: vscode.OutputChannel | undefined;
 
@@ -11,7 +13,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   log(`activated at ${new Date().toISOString()}`);
 
   const registry = new ProjectRegistry(log);
-  context.subscriptions.push(registry);
+  const manifestStore = new ManifestStore(log);
+  context.subscriptions.push(registry, manifestStore, { dispose: disposeDbtTerminal });
+
+  registry.onDidChangeActive((root) => void manifestStore.setProject(root));
 
   context.subscriptions.push(
     vscode.commands.registerCommand('dbtBooster.showActiveProject', () => {
@@ -37,6 +42,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (pick) {
         registry.pin(pick.root);
       }
+    }),
+    vscode.commands.registerCommand('dbtBooster.showModelCount', () => {
+      void vscode.window.showInformationMessage(
+        manifestStore.current
+          ? `dbt booster: ${manifestStore.modelCount} model(s) in the active project.`
+          : 'dbt booster: no manifest loaded. Run `dbt parse` first.',
+      );
     }),
   );
 
