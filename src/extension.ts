@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { ProjectRegistry } from './projectRegistry';
 import { ManifestStore } from './manifestStore';
+import { LineagePanelProvider } from './lineagePanelProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
 
 let output: vscode.OutputChannel | undefined;
@@ -14,7 +15,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const registry = new ProjectRegistry(log);
   const manifestStore = new ManifestStore(log);
-  context.subscriptions.push(registry, manifestStore, { dispose: disposeDbtTerminal });
+  const lineagePanel = new LineagePanelProvider(
+    context.extensionUri,
+    manifestStore,
+    () => registry.activeRoot,
+  );
+  context.subscriptions.push(
+    registry,
+    manifestStore,
+    lineagePanel,
+    { dispose: disposeDbtTerminal },
+    vscode.window.registerWebviewViewProvider(LineagePanelProvider.viewId, lineagePanel, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+  );
 
   registry.onDidChangeActive((root) => void manifestStore.setProject(root));
 
@@ -50,6 +64,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           : 'dbt booster: no manifest loaded. Run `dbt parse` first.',
       );
     }),
+    vscode.commands.registerCommand('dbtBooster.refreshLineage', () => lineagePanel.refresh()),
   );
 
   await registry.refresh();

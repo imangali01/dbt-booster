@@ -17,7 +17,7 @@ const extensionConfig = {
   logLevel: 'info',
 };
 
-/** The webview bundle: browser / ESM, React bundled in. Empty-but-wired for now. */
+/** The webview bundle: browser / ESM, React + React Flow bundled in. */
 const webviewConfig = {
   entryPoints: ['src/webview/index.tsx'],
   bundle: true,
@@ -28,6 +28,16 @@ const webviewConfig = {
   sourcemap: !production,
   minify: production,
   logLevel: 'info',
+  define: {
+    'process.env.NODE_ENV': production ? '"production"' : '"development"',
+  },
+  loader: {
+    '.css': 'css',
+  },
+  // Some browser-targeted deps still poke at `process.env.*`; keep that safe.
+  banner: {
+    js: 'globalThis.process = globalThis.process || { env: {} };',
+  },
 };
 
 async function main() {

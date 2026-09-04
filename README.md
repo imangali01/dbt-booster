@@ -9,9 +9,11 @@ No AI assistant, no telemetry, no cloud account. It reads your project's
 `target/manifest.json` and shells out to your own `dbt` CLI, letting dbt resolve
 `profiles.yml` the way it normally does.
 
-> Status: early development. Only the walking skeleton (ticket 01) is in place so
-> far — the extension activates on any workspace containing a `dbt_project.yml`
-> and logs a line to its **dbt booster** output channel.
+> Status: early development. Working so far: dbt project discovery, an in-memory
+> `manifest.json` model, and the **Lineage** panel (bottom Panel area) — open a
+> model `.sql` file to see its dependency graph; click a node to open it,
+> shift-click to re-centre, use Refresh to re-run `dbt parse`. The Run / Test /
+> Build / Preview buttons are next.
 
 ## Running from source
 

@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "publisher": "imangali01",
   "repository": {
@@ -35,6 +35,12 @@
         "command": "dbtBooster.showModelCount",
         "title": "Show Model Count",
         "category": "dbt booster"
+      },
+      {
+        "command": "dbtBooster.refreshLineage",
+        "title": "Refresh Lineage",
+        "category": "dbt booster",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -50,10 +56,38 @@
         {
           "command": "dbtBooster.showModelCount",
           "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.refreshLineage",
+          "when": "dbtBooster.projectDetected"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "dbtBooster.refreshLineage",
+          "when": "view == dbtBooster.lineage",
+          "group": "navigation"
         }
       ]
     },
-    "views": {},
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "dbtBoosterPanel",
+          "title": "Lineage",
+          "icon": "media/lineage.svg"
+        }
+      ]
+    },
+    "views": {
+      "dbtBoosterPanel": [
+        {
+          "id": "dbtBooster.lineage",
+          "name": "Lineage",
+          "type": "webview"
+        }
+      ]
+    },
     "configuration": {
       "title": "dbt booster",
       "properties": {
@@ -74,11 +108,14 @@
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
+    "@types/dagre": "^0.7.52",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.2.0",
+    "@xyflow/react": "^12.3.0",
+    "dagre": "^0.8.5",
     "esbuild": "^0.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

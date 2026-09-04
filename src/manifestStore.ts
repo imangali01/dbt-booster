@@ -96,6 +96,15 @@ export class ManifestStore implements vscode.Disposable {
     return resolveNodeIdForFile(this.manifest, rel, CASE_INSENSITIVE);
   }
 
+  /** Absolute on-disk path for a node id (model or source), if it has one. */
+  absolutePathForNode(id: string): string | undefined {
+    const node = this.manifest?.nodes[id] ?? this.manifest?.sources[id];
+    if (!node?.original_file_path || !this.projectRoot) {
+      return undefined;
+    }
+    return path.join(this.projectRoot, node.original_file_path);
+  }
+
   /** Lineage subgraph around a node id; empty graph when no manifest is loaded. */
   lineageAround(centreId: string, upstreamDepth: number, downstreamDepth: number): LineageGraph {
     if (!this.manifest) {
