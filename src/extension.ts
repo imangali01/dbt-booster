@@ -4,7 +4,7 @@ import { ProjectRegistry } from './projectRegistry';
 import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
-import { runActiveModelAction } from './modelActions';
+import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
 
 let output: vscode.OutputChannel | undefined;
 
@@ -68,6 +68,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dbtBooster.refreshLineage', () => lineagePanel.refresh()),
     vscode.commands.registerCommand('dbtBooster.runModel', () =>
       runActiveModelAction('run', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.runModelWithUpstream', () =>
+      runActiveModelWithScope('upstream', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.runModelWithDownstream', () =>
+      runActiveModelWithScope('downstream', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.testModel', () =>
       runActiveModelAction('test', manifestStore),

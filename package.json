@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "license": "MIT",
   "publisher": "imangali01",
   "repository": {
@@ -49,6 +49,16 @@
         "icon": "$(play)"
       },
       {
+        "command": "dbtBooster.runModelWithUpstream",
+        "title": "Run with Upstream (+model)",
+        "category": "dbt booster"
+      },
+      {
+        "command": "dbtBooster.runModelWithDownstream",
+        "title": "Run with Downstream (model+)",
+        "category": "dbt booster"
+      },
+      {
         "command": "dbtBooster.testModel",
         "title": "Test Model",
         "category": "dbt booster",
@@ -90,6 +100,14 @@
           "when": "dbtBooster.projectDetected"
         },
         {
+          "command": "dbtBooster.runModelWithUpstream",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.runModelWithDownstream",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
           "command": "dbtBooster.testModel",
           "when": "dbtBooster.projectDetected"
         },
@@ -116,22 +134,48 @@
           "group": "navigation@1"
         },
         {
-          "command": "dbtBooster.testModel",
+          "submenu": "dbtBooster.runVariants",
           "when": "resourceExtname == .sql && dbtBooster.projectDetected",
           "group": "navigation@2"
         },
         {
-          "command": "dbtBooster.buildModel",
+          "command": "dbtBooster.testModel",
           "when": "resourceExtname == .sql && dbtBooster.projectDetected",
           "group": "navigation@3"
         },
         {
-          "command": "dbtBooster.previewData",
+          "command": "dbtBooster.buildModel",
           "when": "resourceExtname == .sql && dbtBooster.projectDetected",
           "group": "navigation@4"
+        },
+        {
+          "command": "dbtBooster.previewData",
+          "when": "resourceExtname == .sql && dbtBooster.projectDetected",
+          "group": "navigation@5"
+        }
+      ],
+      "dbtBooster.runVariants": [
+        {
+          "command": "dbtBooster.runModel",
+          "group": "1_scope@1"
+        },
+        {
+          "command": "dbtBooster.runModelWithUpstream",
+          "group": "1_scope@2"
+        },
+        {
+          "command": "dbtBooster.runModelWithDownstream",
+          "group": "1_scope@3"
         }
       ]
     },
+    "submenus": [
+      {
+        "id": "dbtBooster.runVariants",
+        "label": "Run With…",
+        "icon": "$(chevron-down)"
+      }
+    ],
     "viewsContainers": {
       "panel": [
         {

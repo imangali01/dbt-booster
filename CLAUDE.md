@@ -20,7 +20,12 @@ account, no AI features.
 These were settled with the user during a grilling session. Honour them.
 
 - **Buttons are exactly: Run, Test, Build, Preview.** No "Compile" button.
-- **Selectors target the model only** — `dbt run --select <model>`, never `+model` / `model+`.
+- **Selectors target the model only, with one narrow exception.** Test / Build / Preview and the
+  lineage graph's node context menu always use `--select <model>` — never `+model` / `model+`.
+  The one exception (ticket 10, added after the original grilling session): a small "Run With…"
+  dropdown next to the editor-title Run button offers "Run Model" (unchanged), "Run with
+  Upstream (`+model`)", and "Run with Downstream (`model+`)". Do not spread graph operators to
+  any other action without the user asking again.
 - **dbt resolves its own `profiles.yml`.** Never pass `--profiles-dir` or `--target`. No `.env`
   loading, no environment shims.
 - **One user setting only: `dbtBooster.dbtPath`** (default `dbt`). Everything else is a
@@ -49,7 +54,9 @@ src/
   dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand()
   modelActions.ts         GLUE  performModelAction(action, name, root) — run|test|build in the
                                 terminal or open the preview panel; runActiveModelAction() resolves
-                                that from the active editor for the title-bar buttons/palette
+                                that from the active editor for the title-bar buttons/palette;
+                                runModelWithScope/runActiveModelWithScope add the Run-variants
+                                dropdown's +model / model+ selectors (Run button only)
   dbtShow.ts              GLUE  runDbtShow(model, cwd) — `dbt show --output json` as a background
                                 child_process (not the terminal), for Preview
   dbtShowParser.ts        PURE  parseDbtShowOutput() — extracts columns/rows from `dbt show` JSON
@@ -116,11 +123,15 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 07 | Preview data | ✅ done (v0.0.7) |
 | 08 | Run actions from graph nodes | ✅ done (v0.0.8) |
 | 09 | Lineage panel — draggable nodes | ✅ done (v0.0.9) |
+| 10 | Run-variants dropdown (`+model` / `model+`) | ✅ done (v0.0.11) |
 
-The original 8-ticket backlog is complete; 09 is a post-backlog addition requested directly by
-the user. 41 vitest tests passing. Branch `main`, 10 commits, nothing pushed. Anything past this
-point (marketplace publish, more features) needs a fresh scope discussion with the user — there
-is no ticket 10 yet.
+The original 8-ticket backlog is complete; 09–10 are post-backlog additions requested directly
+by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
+mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
+(see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`). 41 vitest tests
+passing. Branch `main`, 13 commits, nothing pushed. Anything past this point (marketplace
+publish, more features) needs a fresh scope discussion with the user — there is no ticket 11
+yet.
 
 ## Stack
 
