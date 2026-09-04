@@ -20,17 +20,33 @@ export function runDbtShow(modelName: string, cwd: string): Promise<string> {
       '--output',
       'json',
     ];
-    let out = '';
+    const chunks: Buffer[] = [];
     let child;
     try {
-      child = spawn(dbtCommand(), args, { cwd, shell: true });
+      child = spawn(dbtCommand(), args, {
+        cwd,
+        shell: true,
+        env: {
+          ...process.env,
+          // dbt is a Python process. When its stdout is piped (not a real
+          // console) rather than UTF-8, Python falls back to the system's
+          // ANSI/OEM codepage on Windows — garbling any non-ASCII output
+          // (Cyrillic, etc.) once we decode the bytes as UTF-8 below. Force
+          // UTF-8 on the Python side so the two ends agree.
+          PYTHONIOENCODING: 'utf-8',
+          PYTHONUTF8: '1',
+        },
+      });
     } catch (err) {
       resolve(`Error launching dbt: ${(err as Error).message}`);
       return;
     }
-    child.stdout?.on('data', (chunk: Buffer) => (out += chunk.toString()));
-    child.stderr?.on('data', (chunk: Buffer) => (out += chunk.toString()));
+    // Buffer raw bytes and decode once at the end — decoding each chunk on
+    // its own can split a multi-byte UTF-8 character across a chunk boundary
+    // and corrupt it.
+    child.stdout?.on('data', (chunk: Buffer) => chunks.push(chunk));
+    child.stderr?.on('data', (chunk: Buffer) => chunks.push(chunk));
     child.on('error', (err) => resolve(`Error launching dbt: ${err.message}`));
-    child.on('close', () => resolve(out));
+    child.on('close', () => resolve(Buffer.concat(chunks).toString('utf8')));
   });
 }
