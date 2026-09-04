@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "license": "MIT",
   "publisher": "imangali01",
   "repository": {

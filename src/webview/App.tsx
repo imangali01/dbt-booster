@@ -36,8 +36,10 @@ function LineageNode({ data }: NodeProps): JSX.Element {
     vscode.postMessage({ type: 'expand', nodeId: d.nodeId, direction });
   };
 
+  const style = d.nodeColor ? { borderLeftColor: d.nodeColor } : undefined;
+
   return (
-    <div className={classes} title={d.label}>
+    <div className={classes} style={style} title={d.label}>
       <Handle type="target" position={Position.Left} />
       {d.hasHiddenUpstream ? (
         <button

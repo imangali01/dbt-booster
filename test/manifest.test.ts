@@ -62,6 +62,16 @@ describe('buildLineageSubgraph', () => {
     expect(byId['model.p.c'].hasHiddenUpstream).toBe(false);
   });
 
+  it('carries dbt_project.yml\'s +docs.node_color through, when set', () => {
+    const withColor = manifestOf(
+      model('a', [], { config: { materialized: 'view', docs: { node_color: '#eda405' } } }),
+      model('b', ['a']),
+    );
+    const g = buildLineageSubgraph(withColor, 'model.p.a', 1, 1);
+    expect(g.nodes.find((n) => n.id === 'model.p.a')?.nodeColor).toBe('#eda405');
+    expect(g.nodes.find((n) => n.id === 'model.p.b')?.nodeColor).toBeUndefined();
+  });
+
   it('returns an empty graph for an unknown centre', () => {
     expect(buildLineageSubgraph(chain, 'model.p.ghost', 2, 2)).toEqual({ nodes: [], edges: [] });
   });

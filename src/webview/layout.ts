@@ -10,6 +10,7 @@ export interface LineageNodeData extends Record<string, unknown> {
   label: string;
   resourceType: string;
   materialized?: string;
+  nodeColor?: string;
   isCentre: boolean;
   hasHiddenUpstream: boolean;
   hasHiddenDownstream: boolean;
@@ -44,6 +45,7 @@ export function layoutLineage(graph: LineageGraph): {
         label: node.name,
         resourceType: node.resourceType,
         materialized: node.materialized,
+        nodeColor: node.nodeColor,
         isCentre: node.relation === 'centre',
         hasHiddenUpstream: node.hasHiddenUpstream,
         hasHiddenDownstream: node.hasHiddenDownstream,

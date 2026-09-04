@@ -10,7 +10,7 @@
       "resource_type": "model",
       "package_name": "jaffle_sample",
       "original_file_path": "models/customers.sql",
-      "config": { "materialized": "view" },
+      "config": { "materialized": "view", "docs": { "node_color": "#0963b7" } },
       "depends_on": { "macros": [], "nodes": [] }
     },
     "model.jaffle_sample.orders": {
@@ -19,7 +19,7 @@
       "resource_type": "model",
       "package_name": "jaffle_sample",
       "original_file_path": "models/orders.sql",
-      "config": { "materialized": "table" },
+      "config": { "materialized": "table", "docs": { "node_color": "#eda405" } },
       "depends_on": { "macros": [], "nodes": ["model.jaffle_sample.customers"] }
     }
   },
