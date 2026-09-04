@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "license": "MIT",
   "icon": "media/dbt-logo.png",
   "publisher": "imangali01",
@@ -193,6 +193,11 @@
           "id": "dbtBoosterPanel",
           "title": "Lineage",
           "icon": "media/dbt-logo.png"
+        },
+        {
+          "id": "dbtBoosterDocsPanel",
+          "title": "Docs",
+          "icon": "media/dbt-logo.png"
         }
       ]
     },
@@ -202,7 +207,9 @@
           "id": "dbtBooster.lineage",
           "name": "Lineage",
           "type": "webview"
-        },
+        }
+      ],
+      "dbtBoosterDocsPanel": [
         {
           "id": "dbtBooster.docs",
           "name": "Docs",

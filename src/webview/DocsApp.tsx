@@ -27,25 +27,65 @@ function testLabel(test: TestDoc): string {
   }
 }
 
-function TestAdder({ onAdd }: { onAdd: (test: TestDoc) => void }): JSX.Element {
+/** Structural equality for "is this exact test already on the column". */
+function testsEqual(a: TestDoc, b: TestDoc): boolean {
+  if (a.kind !== b.kind) {
+    return false;
+  }
+  switch (a.kind) {
+    case 'not_null':
+    case 'unique':
+      return true;
+    case 'relationships':
+      return b.kind === 'relationships' && a.to === b.to && a.field === b.field;
+    case 'accepted_values':
+      return (
+        b.kind === 'accepted_values' &&
+        a.values.length === b.values.length &&
+        a.values.every((v, i) => v === b.values[i])
+      );
+    case 'custom':
+      return b.kind === 'custom' && a.raw.trim() === b.raw.trim();
+  }
+}
+
+function TestAdder({
+  onAdd,
+  isDuplicate,
+}: {
+  onAdd: (test: TestDoc) => void;
+  isDuplicate: (test: TestDoc) => boolean;
+}): JSX.Element {
   const [kind, setKind] = useState<TestDoc['kind']>('not_null');
   const [to, setTo] = useState('');
   const [field, setField] = useState('');
   const [values, setValues] = useState('');
   const [raw, setRaw] = useState('');
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
+
+  const tryAdd = (test: TestDoc): boolean => {
+    if (isDuplicate(test)) {
+      setDuplicateWarning(true);
+      setTimeout(() => setDuplicateWarning(false), 1500);
+      return false;
+    }
+    onAdd(test);
+    return true;
+  };
 
   const add = (): void => {
     if (kind === 'not_null' || kind === 'unique') {
-      onAdd({ kind });
+      tryAdd({ kind });
       return;
     }
     if (kind === 'relationships') {
       if (!to.trim() || !field.trim()) {
         return;
       }
-      onAdd({ kind: 'relationships', to: to.trim(), field: field.trim() });
-      setTo('');
-      setField('');
+      if (tryAdd({ kind: 'relationships', to: to.trim(), field: field.trim() })) {
+        setTo('');
+        setField('');
+      }
       return;
     }
     if (kind === 'accepted_values') {
@@ -56,12 +96,12 @@ function TestAdder({ onAdd }: { onAdd: (test: TestDoc) => void }): JSX.Element {
       if (list.length === 0) {
         return;
       }
-      onAdd({ kind: 'accepted_values', values: list });
-      setValues('');
+      if (tryAdd({ kind: 'accepted_values', values: list })) {
+        setValues('');
+      }
       return;
     }
-    if (raw.trim()) {
-      onAdd({ kind: 'custom', raw: raw.trim() });
+    if (raw.trim() && tryAdd({ kind: 'custom', raw: raw.trim() })) {
       setRaw('');
     }
   };
@@ -102,6 +142,7 @@ function TestAdder({ onAdd }: { onAdd: (test: TestDoc) => void }): JSX.Element {
       <button type="button" onClick={add}>
         + Add test
       </button>
+      {duplicateWarning ? <span className="dp-test-warning">Already added</span> : null}
     </div>
   );
 }
@@ -149,7 +190,10 @@ function ColumnRow({
           </span>
         ))}
       </div>
-      <TestAdder onAdd={(test) => onChange({ ...column, tests: [...column.tests, test] })} />
+      <TestAdder
+        onAdd={(test) => onChange({ ...column, tests: [...column.tests, test] })}
+        isDuplicate={(test) => column.tests.some((existing) => testsEqual(existing, test))}
+      />
     </div>
   );
 }

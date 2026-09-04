@@ -297,8 +297,14 @@ body {
 .dp-test-adder {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
   margin-top: 4px;
+}
+
+.dp-test-warning {
+  font-size: 11px;
+  color: var(--vscode-errorForeground, #f14c4c);
 }
 
 /* Form controls, themed to match VS Code */

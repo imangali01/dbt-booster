@@ -82,9 +82,10 @@ src/
                                 API — readModelDoc / hasModelDoc / applyModelDoc; only the target
                                 model's node is touched, rest of the file passes through as-is
   docsProtocol.ts         PURE  DocsExtensionToWebview / DocsWebviewToExtension message types
-  docsPanelProvider.ts    GLUE  DocsPanelProvider — "Docs" webview view next to Lineage; resolves
-                                the active model, finds its yml via manifestStore.docsTarget()
-                                (patch_path, else <model dir>/schema.yml), reads/writes on save
+  docsPanelProvider.ts    GLUE  DocsPanelProvider — "Docs" webview view, its own Panel-area tab
+                                (separate viewsContainer from Lineage's); resolves the active
+                                model, finds its yml via manifestStore.docsTarget() (patch_path,
+                                else <model dir>/schema.yml), reads/writes on save
   webview/
     index.tsx             React bootstrap — routes on the root div's data-view ("lineage" |
                            "docs") to <App/> or <DocsApp/>
