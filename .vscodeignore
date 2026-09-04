@@ -1,6 +1,7 @@
 .vscode/**
 .scratch/**
 .claude/**
+CLAUDE.md
 src/**
 test/**
 sample/**
