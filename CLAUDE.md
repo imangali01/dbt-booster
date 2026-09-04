@@ -52,6 +52,11 @@ src/
                                 watcher, missing-manifest "Run dbt parse" prompt,
                                 resolveModelId / lineageAround / absolutePathForNode
   dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand()
+  pythonEnvironments.ts   PURE  dbtExecutableInEnv, parseCondaEnvironmentsFile, describeDbtPath
+  pythonEnvironmentPicker.ts
+                          GLUE  pickPythonEnvironment() — QuickPick over discovered conda/venv
+                                envs (via ~/.conda/environments.txt, no `conda` on PATH needed) +
+                                manual entry + reset; writes dbtBooster.dbtPath, no new setting
   modelActions.ts         GLUE  performModelAction(action, name, root) — run|test|build in the
                                 terminal or open the preview panel; runActiveModelAction() resolves
                                 that from the active editor for the title-bar buttons/palette;
@@ -124,14 +129,15 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 08 | Run actions from graph nodes | ✅ done (v0.0.8) |
 | 09 | Lineage panel — draggable nodes | ✅ done (v0.0.9) |
 | 10 | Run-variants dropdown (`+model` / `model+`) | ✅ done (v0.0.11) |
+| 11 | Python environment picker (status bar) | ✅ done (v0.0.12) |
 
-The original 8-ticket backlog is complete; 09–10 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–11 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
-(see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`). 41 vitest tests
-passing. Branch `main`, 13 commits, nothing pushed. Anything past this point (marketplace
-publish, more features) needs a fresh scope discussion with the user — there is no ticket 11
-yet.
+(see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
+motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 49 vitest
+tests passing. Branch `main`, 14 commits, nothing pushed. Anything past this point (marketplace
+publish, more features) needs a fresh scope discussion with the user — there is no ticket 12 yet.
 
 ## Stack
 

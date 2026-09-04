@@ -5,6 +5,8 @@ import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
 import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
+import { pickPythonEnvironment } from './pythonEnvironmentPicker';
+import { describeDbtPath } from './pythonEnvironments';
 
 let output: vscode.OutputChannel | undefined;
 
@@ -32,6 +34,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   registry.onDidChangeActive((root) => void manifestStore.setProject(root));
+
+  const pythonEnvStatusBar = vscode.window.createStatusBarItem(
+    'dbtBooster.pythonEnv',
+    vscode.StatusBarAlignment.Right,
+    100,
+  );
+  pythonEnvStatusBar.name = 'dbt booster: Python Environment';
+  pythonEnvStatusBar.command = 'dbtBooster.selectPythonEnvironment';
+  const updatePythonEnvStatusBar = (): void => {
+    const dbtPath = vscode.workspace.getConfiguration('dbtBooster').get<string>('dbtPath', 'dbt');
+    const label = describeDbtPath(dbtPath || 'dbt');
+    pythonEnvStatusBar.text = `$(server-environment) dbt: ${label}`;
+    pythonEnvStatusBar.tooltip = `dbt booster — dbt command: ${dbtPath || 'dbt'}\nClick to select a Python environment`;
+  };
+  updatePythonEnvStatusBar();
+  pythonEnvStatusBar.show();
+  context.subscriptions.push(
+    pythonEnvStatusBar,
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('dbtBooster.dbtPath')) {
+        updatePythonEnvStatusBar();
+      }
+    }),
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('dbtBooster.showActiveProject', () => {
@@ -83,6 +109,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ),
     vscode.commands.registerCommand('dbtBooster.previewData', () =>
       runActiveModelAction('preview', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.selectPythonEnvironment', () =>
+      pickPythonEnvironment(registry.allRoots),
     ),
   );
 
