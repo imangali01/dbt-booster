@@ -3,6 +3,7 @@ import * as path from 'path';
 import { ProjectRegistry } from './projectRegistry';
 import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
+import { DocsPanelProvider } from './docsPanelProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
 import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
 import { pickPythonEnvironment } from './pythonEnvironmentPicker';
@@ -23,12 +24,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     manifestStore,
     () => registry.activeRoot,
   );
+  const docsPanel = new DocsPanelProvider(context.extensionUri, manifestStore);
   context.subscriptions.push(
     registry,
     manifestStore,
     lineagePanel,
+    docsPanel,
     { dispose: disposeDbtTerminal },
     vscode.window.registerWebviewViewProvider(LineagePanelProvider.viewId, lineagePanel, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.window.registerWebviewViewProvider(DocsPanelProvider.viewId, docsPanel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );

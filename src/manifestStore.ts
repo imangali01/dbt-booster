@@ -3,6 +3,7 @@ import * as path from 'path';
 import {
   buildLineageSubgraph,
   countModels,
+  docsTargetForModel,
   normaliseManifest,
   resolveNodeIdForFile,
   type DbtManifest,
@@ -116,6 +117,18 @@ export class ManifestStore implements vscode.Disposable {
       return undefined;
     }
     return path.join(this.projectRoot, node.original_file_path);
+  }
+
+  /** Where a model's schema.yml doc block lives (or should be created), as an absolute path. */
+  docsTarget(modelId: string): { yamlPath: string; modelName: string } | undefined {
+    if (!this.manifest || !this.projectRoot) {
+      return undefined;
+    }
+    const target = docsTargetForModel(this.manifest, modelId);
+    if (!target) {
+      return undefined;
+    }
+    return { yamlPath: path.join(this.projectRoot, target.yamlRelPath), modelName: target.modelName };
   }
 
   /** Lineage subgraph around a node id; empty graph when no manifest is loaded. */

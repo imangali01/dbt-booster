@@ -17,8 +17,7 @@ import './styles.css';
 import type { ExtensionToWebview } from '../protocol';
 import type { LineageGraph } from '../manifest';
 import { layoutLineage, type LineageNodeData } from './layout';
-
-const vscode = acquireVsCodeApi();
+import vscode from './vscodeApi';
 
 type ViewState =
   | { kind: 'initial' }

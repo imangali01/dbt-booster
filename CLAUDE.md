@@ -78,13 +78,25 @@ src/
                                 handles openFile / recentre / expand / nodeAction (run/test/build/
                                 preview a right-clicked node); Refresh = dbt parse + reload
   protocol.ts             PURE  ExtensionToWebview / WebviewToExtension message types
+  schemaYaml.ts           PURE  round-trip schema.yml editing via the `yaml` package's Document
+                                API — readModelDoc / hasModelDoc / applyModelDoc; only the target
+                                model's node is touched, rest of the file passes through as-is
+  docsProtocol.ts         PURE  DocsExtensionToWebview / DocsWebviewToExtension message types
+  docsPanelProvider.ts    GLUE  DocsPanelProvider — "Docs" webview view next to Lineage; resolves
+                                the active model, finds its yml via manifestStore.docsTarget()
+                                (patch_path, else <model dir>/schema.yml), reads/writes on save
   webview/
-    index.tsx             React bootstrap
+    index.tsx             React bootstrap — routes on the root div's data-view ("lineage" |
+                           "docs") to <App/> or <DocsApp/>
     App.tsx               React Flow surface + custom LineageNode (badges, "＋" handles) +
                            right-click NodeContextMenu (Run/Test/Build/Preview, model nodes only)
+    DocsApp.tsx            schema.yml form: description, columns, per-column tests via a dropdown
+                           (not_null/unique/relationships/accepted_values/custom)
+    vscodeApi.ts           the ONE acquireVsCodeApi() call, shared by App.tsx and DocsApp.tsx —
+                           VS Code throws if it's called twice in one webview page
     layout.ts             PURE-ish  layoutLineage() — dagre LR layout → React Flow nodes/edges
-    styles.css            theme-var-based node + context-menu styling
-    vscode.d.ts           acquireVsCodeApi() typing
+    styles.css            theme-var-based node + context-menu + docs-form styling
+    vscode.d.ts           acquireVsCodeApi() global typing
 test/                     vitest — one file per pure module
 sample/jaffle/            minimal dbt project + hand-written target/manifest.json fixture
                           (customers ← orders) so features work without a real dbt run
@@ -138,18 +150,19 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 12 | Preview UX polish + configurable row limit | ✅ done (v0.0.13) |
 | 13 | Lineage node colour from `dbt_project.yml` | ✅ done (v0.0.14) |
 | 14 | Extension icon + Lineage panel icon | ✅ done (v0.0.15) |
+| 15 | Docs editor (schema.yml) | ✅ done (v0.0.16) |
 
-The original 8-ticket backlog is complete; 09–14 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–15 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
-motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 55 vitest
-tests passing. Branch `main`, 17 commits, nothing pushed. A schema.yml doc/test editor (next to
-the Lineage panel) is under discussion with the user — see the conversation, not yet a ticket.
-Anything past this point needs scope agreed with the user first.
+motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 89 vitest
+tests passing. Branch `main`, 18 commits, nothing pushed. Anything past this point needs scope
+agreed with the user first.
 
 ## Stack
 
 TypeScript, esbuild (no webpack), vitest (no VS Code test runner — pure functions only),
-React 18 + `@xyflow/react` v12 + `dagre` in the webview. `@vscode/vsce` for packaging.
+React 18 + `@xyflow/react` v12 + `dagre` in the webview, `yaml` (extension host only, for
+schema.yml round-tripping). `@vscode/vsce` for packaging.
 `publisher` is `imangali01` (placeholder — confirm before any marketplace publish).

@@ -213,7 +213,7 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
 <title>Lineage</title>
 </head>
 <body>
-<div id="root"></div>
+<div id="root" data-view="lineage"></div>
 <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
 </body>
 </html>`;

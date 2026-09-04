@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildLineageSubgraph,
   countModels,
+  docsTargetForModel,
   normaliseManifest,
   resolveNodeIdForFile,
   type DbtManifest,
@@ -201,6 +202,40 @@ describe('resolveNodeIdForFile', () => {
 
   it('returns undefined when nothing matches', () => {
     expect(resolveNodeIdForFile(m, 'models/unknown.sql')).toBeUndefined();
+  });
+});
+
+describe('docsTargetForModel', () => {
+  it('uses patch_path when the model already has a doc entry, wherever it lives', () => {
+    const m = manifestOf(
+      model('orders', [], { patch_path: 'jaffle_sample://models/docs/orders.yml' }),
+    );
+    expect(docsTargetForModel(m, 'model.p.orders')).toEqual({
+      yamlRelPath: 'models/docs/orders.yml',
+      modelName: 'orders',
+    });
+  });
+
+  it('defaults to schema.yml next to the model when undocumented', () => {
+    const m = manifestOf(model('orders'));
+    expect(docsTargetForModel(m, 'model.p.orders')).toEqual({
+      yamlRelPath: 'models/schema.yml',
+      modelName: 'orders',
+    });
+  });
+
+  it('returns undefined for a non-model node', () => {
+    const m = manifestOf({
+      unique_id: 'seed.p.s',
+      name: 's',
+      resource_type: 'seed',
+      original_file_path: 'seeds/s.csv',
+    });
+    expect(docsTargetForModel(m, 'seed.p.s')).toBeUndefined();
+  });
+
+  it('returns undefined for an unknown id', () => {
+    expect(docsTargetForModel(manifestOf(model('orders')), 'model.p.ghost')).toBeUndefined();
   });
 });
 
