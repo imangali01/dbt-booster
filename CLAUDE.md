@@ -102,10 +102,10 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 04 | Lineage panel — render | ✅ done (v0.0.4) |
 | 05 | Lineage panel — "＋" expand handles | ✅ done (v0.0.5) |
 | 06 | Run / Test / Build buttons | ✅ done (v0.0.6) |
-| 07 | Preview data | ⬜ next — unblocked (needs 03) |
-| 08 | Run actions from graph nodes | ⬜ blocked by 07 |
+| 07 | Preview data | ✅ done (v0.0.7) |
+| 08 | Run actions from graph nodes | ⬜ next — unblocked (needs 05, 06, 07) |
 
-32 vitest tests passing. Branch `main`, 6 commits, nothing pushed.
+41 vitest tests passing. Branch `main`, 7 commits, nothing pushed.
 
 ## Stack
 
