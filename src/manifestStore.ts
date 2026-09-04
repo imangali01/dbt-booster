@@ -103,6 +103,12 @@ export class ManifestStore implements vscode.Disposable {
     return id ? this.manifest?.nodes[id]?.name : undefined;
   }
 
+  /** Model name for a manifest node id — only for `model` nodes, not source/seed/snapshot. */
+  modelNameForNode(id: string): string | undefined {
+    const node = this.manifest?.nodes[id];
+    return node?.resource_type === 'model' ? node.name : undefined;
+  }
+
   /** Absolute on-disk path for a node id (model or source), if it has one. */
   absolutePathForNode(id: string): string | undefined {
     const node = this.manifest?.nodes[id] ?? this.manifest?.sources[id];

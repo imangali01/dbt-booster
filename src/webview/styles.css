@@ -120,3 +120,35 @@ body {
 .ln-snapshot {
   border-left-color: #c0b6f2;
 }
+
+.ln-ctx-menu {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+  padding: 4px;
+  border: 1px solid var(--vscode-panel-border, #454545);
+  border-radius: 4px;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background, #252526));
+  color: var(--vscode-menu-foreground, var(--vscode-editor-foreground));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.ln-ctx-item {
+  display: block;
+  width: 100%;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.ln-ctx-item:hover {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground, #2a2d2e));
+  color: var(--vscode-menu-selectionForeground, inherit);
+}

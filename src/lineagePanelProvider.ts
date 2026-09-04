@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { ManifestStore } from './manifestStore';
 import type { ExtensionToWebview, WebviewToExtension } from './protocol';
 import { runDbt } from './dbtTerminal';
+import { performModelAction } from './modelActions';
 
 const UPSTREAM_DEPTH = 2;
 const DOWNSTREAM_DEPTH = 2;
@@ -91,7 +92,20 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
         this.expand(msg.nodeId, msg.direction);
         this.render();
         break;
+      case 'nodeAction':
+        this.runNodeAction(msg.nodeId, msg.action);
+        break;
     }
+  }
+
+  private runNodeAction(nodeId: string, action: 'run' | 'test' | 'build' | 'preview'): void {
+    const projectRoot = this.store.activeProjectRoot;
+    const modelName = this.store.modelNameForNode(nodeId);
+    if (!projectRoot || !modelName) {
+      void vscode.window.showErrorMessage('dbt booster: that node is not a runnable model.');
+      return;
+    }
+    performModelAction(action, modelName, projectRoot);
   }
 
   private resetView(): void {

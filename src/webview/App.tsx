@@ -67,8 +67,63 @@ function LineageNode({ data }: NodeProps): JSX.Element {
 
 const nodeTypes = { lineage: LineageNode };
 
+interface ContextMenuState {
+  nodeId: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+const NODE_ACTIONS: { action: 'run' | 'test' | 'build' | 'preview'; label: string }[] = [
+  { action: 'run', label: 'Run' },
+  { action: 'test', label: 'Test' },
+  { action: 'build', label: 'Build' },
+  { action: 'preview', label: 'Preview' },
+];
+
+function NodeContextMenu({
+  menu,
+  onSelect,
+  onClose,
+}: {
+  menu: ContextMenuState;
+  onSelect: (action: 'run' | 'test' | 'build' | 'preview') => void;
+  onClose: () => void;
+}): JSX.Element {
+  useEffect(() => {
+    const close = (): void => onClose();
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('blur', close);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('blur', close);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="ln-ctx-menu" style={{ left: menu.x, top: menu.y }} title={menu.label}>
+      {NODE_ACTIONS.map(({ action, label }) => (
+        <button
+          key={action}
+          type="button"
+          className="ln-ctx-item"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(action);
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function App(): JSX.Element {
   const [state, setState] = useState<ViewState>({ kind: 'initial' });
+  const [menu, setMenu] = useState<ContextMenuState | null>(null);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<ExtensionToWebview>): void => {
@@ -97,6 +152,27 @@ export function App(): JSX.Element {
     }
   }, []);
 
+  const onNodeContextMenu = useCallback<NodeMouseHandler>((event, node) => {
+    const data = node.data as LineageNodeData;
+    if (data.resourceType !== 'model') {
+      return; // Run/Test/Build/Preview only apply to models.
+    }
+    event.preventDefault();
+    setMenu({ nodeId: node.id, label: data.label, x: event.clientX, y: event.clientY });
+  }, []);
+
+  const closeMenu = useCallback(() => setMenu(null), []);
+
+  const onSelectAction = useCallback(
+    (action: 'run' | 'test' | 'build' | 'preview') => {
+      if (menu) {
+        vscode.postMessage({ type: 'nodeAction', nodeId: menu.nodeId, action });
+      }
+      setMenu(null);
+    },
+    [menu],
+  );
+
   if (state.kind !== 'graph') {
     return (
       <div className="ln-empty">
@@ -106,20 +182,24 @@ export function App(): JSX.Element {
   }
 
   return (
-    <ReactFlow
-      nodes={laidOut.nodes}
-      edges={laidOut.edges}
-      nodeTypes={nodeTypes}
-      onNodeClick={onNodeClick}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      edgesFocusable={false}
-      fitView
-      minZoom={0.2}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background gap={16} />
-      <Controls showInteractive={false} />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={laidOut.nodes}
+        edges={laidOut.edges}
+        nodeTypes={nodeTypes}
+        onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        edgesFocusable={false}
+        fitView
+        minZoom={0.2}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background gap={16} />
+        <Controls showInteractive={false} />
+      </ReactFlow>
+      {menu ? <NodeContextMenu menu={menu} onSelect={onSelectAction} onClose={closeMenu} /> : null}
+    </>
   );
 }

@@ -9,7 +9,7 @@ published to a marketplace. Two features:
 
 1. **Lineage panel** — an interactive dependency graph for the model you are editing.
 2. **Run buttons** — one-click Run / Test / Build / Preview for that model, from the editor
-   title bar (and later from graph nodes).
+   title bar or by right-clicking a node in the graph.
 
 It is a from-scratch analogue of "dbt Power User" with the AI assistant deliberately left out.
 **No code is borrowed** from dbt Power User or any other extension. No telemetry, no cloud
@@ -47,15 +47,26 @@ src/
                                 watcher, missing-manifest "Run dbt parse" prompt,
                                 resolveModelId / lineageAround / absolutePathForNode
   dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand()
+  modelActions.ts         GLUE  performModelAction(action, name, root) — run|test|build in the
+                                terminal or open the preview panel; runActiveModelAction() resolves
+                                that from the active editor for the title-bar buttons/palette
+  dbtShow.ts              GLUE  runDbtShow(model, cwd) — `dbt show --output json` as a background
+                                child_process (not the terminal), for Preview
+  dbtShowParser.ts        PURE  parseDbtShowOutput() — extracts columns/rows from `dbt show` JSON
+                                output, tolerant of surrounding plain or structured-JSON log lines
+  previewPanel.ts         GLUE  showPreview(model, root) — editor-area WebviewPanel, re-created per
+                                run, self-contained HTML/CSS/JS sortable table (no React needed)
   lineagePanelProvider.ts GLUE  LineagePanelProvider — WebviewViewProvider for the panel;
                                 resolves the centre from the active editor, posts graph/empty,
-                                handles openFile / recentre / expand; Refresh = dbt parse + reload
+                                handles openFile / recentre / expand / nodeAction (run/test/build/
+                                preview a right-clicked node); Refresh = dbt parse + reload
   protocol.ts             PURE  ExtensionToWebview / WebviewToExtension message types
   webview/
     index.tsx             React bootstrap
-    App.tsx               React Flow surface + custom LineageNode (badges, "＋" handles)
+    App.tsx               React Flow surface + custom LineageNode (badges, "＋" handles) +
+                           right-click NodeContextMenu (Run/Test/Build/Preview, model nodes only)
     layout.ts             PURE-ish  layoutLineage() — dagre LR layout → React Flow nodes/edges
-    styles.css            theme-var-based node styling
+    styles.css            theme-var-based node + context-menu styling
     vscode.d.ts           acquireVsCodeApi() typing
 test/                     vitest — one file per pure module
 sample/jaffle/            minimal dbt project + hand-written target/manifest.json fixture
@@ -92,7 +103,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
    Windows PowerShell.
 6. Send the `.vsix` to the user. Do **not** push (there is no remote).
 
-## Status (as of ticket 05)
+## Status (as of ticket 08 — all 8 tickets done)
 
 | # | Ticket | State |
 |---|---|---|
@@ -103,9 +114,11 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 05 | Lineage panel — "＋" expand handles | ✅ done (v0.0.5) |
 | 06 | Run / Test / Build buttons | ✅ done (v0.0.6) |
 | 07 | Preview data | ✅ done (v0.0.7) |
-| 08 | Run actions from graph nodes | ⬜ next — unblocked (needs 05, 06, 07) |
+| 08 | Run actions from graph nodes | ✅ done (v0.0.8) |
 
-41 vitest tests passing. Branch `main`, 7 commits, nothing pushed.
+The original backlog is complete. 41 vitest tests passing. Branch `main`, 8 commits, nothing
+pushed. Anything past this point (marketplace publish, new features) needs a fresh scope
+discussion with the user — there is no ticket 09 yet.
 
 ## Stack
 
