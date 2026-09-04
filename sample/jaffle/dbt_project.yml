@@ -1,0 +1,11 @@
+name: 'jaffle_sample'
+version: '1.0.0'
+config-version: 2
+
+profile: 'jaffle_sample'
+
+model-paths: ["models"]
+
+models:
+  jaffle_sample:
+    +materialized: view

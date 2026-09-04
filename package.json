@@ -1,0 +1,52 @@
+{
+  "name": "dbt-booster",
+  "displayName": "dbt booster",
+  "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
+  "version": "0.0.1",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/dbt_project.yml"
+  ],
+  "contributes": {
+    "commands": [],
+    "menus": {},
+    "views": {},
+    "configuration": {
+      "title": "dbt booster",
+      "properties": {
+        "dbtBooster.dbtPath": {
+          "type": "string",
+          "default": "dbt",
+          "description": "Command used to invoke dbt (e.g. \"dbt\", an absolute path, or \"uv run dbt\")."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  }
+}

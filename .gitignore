@@ -1,0 +1,6 @@
+node_modules/
+out/
+*.vsix
+.scratch/
+.DS_Store
+Thumbs.db
