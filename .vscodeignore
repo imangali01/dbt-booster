@@ -1,0 +1,17 @@
+.vscode/**
+.scratch/**
+.claude/**
+src/**
+test/**
+sample/**
+node_modules/**
+.git/**
+.gitignore
+esbuild.mjs
+tsconfig.json
+vitest.config.ts
+package-lock.json
+**/*.map
+**/*.ts
+!README.md
+!LICENSE
