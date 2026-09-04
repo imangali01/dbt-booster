@@ -4,6 +4,7 @@ import { ProjectRegistry } from './projectRegistry';
 import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
 import { DocsPanelProvider } from './docsPanelProvider';
+import { ProjectInfoProvider } from './projectInfoProvider';
 import { disposeDbtTerminal } from './dbtTerminal';
 import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
 import { pickPythonEnvironment } from './pythonEnvironmentPicker';
@@ -25,11 +26,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     () => registry.activeRoot,
   );
   const docsPanel = new DocsPanelProvider(context.extensionUri, manifestStore);
+  const projectInfo = new ProjectInfoProvider(registry, manifestStore);
   context.subscriptions.push(
     registry,
     manifestStore,
     lineagePanel,
     docsPanel,
+    projectInfo,
     { dispose: disposeDbtTerminal },
     vscode.window.registerWebviewViewProvider(LineagePanelProvider.viewId, lineagePanel, {
       webviewOptions: { retainContextWhenHidden: true },
@@ -37,6 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.registerWebviewViewProvider(DocsPanelProvider.viewId, docsPanel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.window.registerTreeDataProvider('dbtBooster.projectInfo', projectInfo),
   );
 
   registry.onDidChangeActive((root) => void manifestStore.setProject(root));

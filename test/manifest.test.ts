@@ -5,6 +5,7 @@ import {
   docsTargetForModel,
   normaliseManifest,
   resolveNodeIdForFile,
+  resourceCounts,
   type DbtManifest,
   type ManifestNode,
 } from '../src/manifest';
@@ -247,5 +248,31 @@ describe('countModels', () => {
       resource_type: 'seed',
     });
     expect(countModels(m)).toBe(2);
+  });
+});
+
+describe('resourceCounts', () => {
+  it('counts each resource type across nodes and sources', () => {
+    const m: DbtManifest = {
+      nodes: {
+        'model.p.a': model('a'),
+        'model.p.b': model('b'),
+        'seed.p.s': { unique_id: 'seed.p.s', name: 's', resource_type: 'seed' },
+        'snapshot.p.sn': { unique_id: 'snapshot.p.sn', name: 'sn', resource_type: 'snapshot' },
+        'test.p.t': { unique_id: 'test.p.t', name: 't', resource_type: 'test' },
+      },
+      sources: {
+        'source.p.raw.orders': {
+          unique_id: 'source.p.raw.orders',
+          name: 'orders',
+          resource_type: 'source',
+        },
+      },
+    };
+    expect(resourceCounts(m)).toEqual({ model: 2, source: 1, seed: 1, snapshot: 1 });
+  });
+
+  it('handles a manifest with no sources/nodes at all', () => {
+    expect(resourceCounts({})).toEqual({ model: 0, source: 0, seed: 0, snapshot: 0 });
   });
 });
