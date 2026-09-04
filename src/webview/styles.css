@@ -30,6 +30,7 @@ body {
 
 .ln-node {
   position: relative;
+  cursor: grab;
   width: 180px;
   box-sizing: border-box;
   border: 1px solid var(--vscode-panel-border, #454545);
@@ -101,6 +102,10 @@ body {
   background: transparent;
   border: 1px solid var(--vscode-panel-border, #454545);
   color: var(--vscode-descriptionForeground, #999);
+}
+
+.react-flow__node.dragging .ln-node {
+  cursor: grabbing;
 }
 
 .ln-centre {

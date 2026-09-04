@@ -103,7 +103,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
    Windows PowerShell.
 6. Send the `.vsix` to the user. Do **not** push (there is no remote).
 
-## Status (as of ticket 08 — all 8 tickets done)
+## Status (as of ticket 09)
 
 | # | Ticket | State |
 |---|---|---|
@@ -115,10 +115,12 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 06 | Run / Test / Build buttons | ✅ done (v0.0.6) |
 | 07 | Preview data | ✅ done (v0.0.7) |
 | 08 | Run actions from graph nodes | ✅ done (v0.0.8) |
+| 09 | Lineage panel — draggable nodes | ✅ done (v0.0.9) |
 
-The original backlog is complete. 41 vitest tests passing. Branch `main`, 8 commits, nothing
-pushed. Anything past this point (marketplace publish, new features) needs a fresh scope
-discussion with the user — there is no ticket 09 yet.
+The original 8-ticket backlog is complete; 09 is a post-backlog addition requested directly by
+the user. 41 vitest tests passing. Branch `main`, 10 commits, nothing pushed. Anything past this
+point (marketplace publish, more features) needs a fresh scope discussion with the user — there
+is no ticket 10 yet.
 
 ## Stack
 

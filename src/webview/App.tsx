@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Background,
   Controls,
   Handle,
   Position,
   ReactFlow,
+  useNodesState,
+  type Edge,
+  type Node,
   type NodeMouseHandler,
   type NodeProps,
+  type OnNodeDrag,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './styles.css';
@@ -124,6 +128,14 @@ function NodeContextMenu({
 export function App(): JSX.Element {
   const [state, setState] = useState<ViewState>({ kind: 'initial' });
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<LineageNodeData>>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+
+  // Positions the user has dragged (or that dagre already settled on) survive later
+  // "graph" messages — expand clicks, Refresh, panel visibility — as long as the
+  // centre model hasn't changed. A genuine re-centre starts the layout fresh.
+  const draggedPositions = useRef(new Map<string, { x: number; y: number }>());
+  const lastCentreId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<ExtensionToWebview>): void => {
@@ -139,10 +151,39 @@ export function App(): JSX.Element {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  const laidOut = useMemo(
-    () => (state.kind === 'graph' ? layoutLineage(state.graph) : { nodes: [], edges: [] }),
-    [state],
-  );
+  useEffect(() => {
+    if (state.kind !== 'graph') {
+      return;
+    }
+    if (lastCentreId.current !== state.centreId) {
+      draggedPositions.current.clear();
+      lastCentreId.current = state.centreId;
+    }
+
+    const laidOut = layoutLineage(state.graph);
+    const liveIds = new Set(laidOut.nodes.map((n) => n.id));
+    for (const id of [...draggedPositions.current.keys()]) {
+      if (!liveIds.has(id)) {
+        draggedPositions.current.delete(id);
+      }
+    }
+
+    setNodes(
+      laidOut.nodes.map((node) => {
+        const kept = draggedPositions.current.get(node.id);
+        if (kept) {
+          return { ...node, position: kept };
+        }
+        draggedPositions.current.set(node.id, node.position);
+        return node;
+      }),
+    );
+    setEdges(laidOut.edges);
+  }, [state, setNodes]);
+
+  const onNodeDragStop = useCallback<OnNodeDrag<Node<LineageNodeData>>>((_event, node) => {
+    draggedPositions.current.set(node.id, node.position);
+  }, []);
 
   const onNodeClick = useCallback<NodeMouseHandler>((event, node) => {
     if (event.shiftKey) {
@@ -184,12 +225,14 @@ export function App(): JSX.Element {
   return (
     <>
       <ReactFlow
-        nodes={laidOut.nodes}
-        edges={laidOut.edges}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
         nodeTypes={nodeTypes}
         onNodeClick={onNodeClick}
         onNodeContextMenu={onNodeContextMenu}
-        nodesDraggable={false}
+        onNodeDragStop={onNodeDragStop}
+        nodesDraggable
         nodesConnectable={false}
         edgesFocusable={false}
         fitView
