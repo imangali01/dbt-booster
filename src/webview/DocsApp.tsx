@@ -147,6 +147,67 @@ function TestAdder({
   );
 }
 
+function TagsEditor({
+  tags,
+  onChange,
+}: {
+  tags: string[];
+  onChange: (next: string[]) => void;
+}): JSX.Element {
+  const [value, setValue] = useState('');
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
+
+  const add = (): void => {
+    const tag = value.trim();
+    if (!tag) {
+      return;
+    }
+    if (tags.includes(tag)) {
+      setDuplicateWarning(true);
+      setTimeout(() => setDuplicateWarning(false), 1500);
+      return;
+    }
+    onChange([...tags, tag]);
+    setValue('');
+  };
+
+  return (
+    <div>
+      <div className="dp-tests">
+        {tags.map((tag, i) => (
+          <span className="dp-test-chip" key={i}>
+            {tag}
+            <button
+              type="button"
+              title="Remove tag"
+              onClick={() => onChange(tags.filter((_, j) => j !== i))}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="dp-test-adder">
+        <input
+          placeholder="tag name"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button type="button" onClick={add}>
+          + Add tag
+        </button>
+        {duplicateWarning ? <span className="dp-test-warning">Already added</span> : null}
+      </div>
+    </div>
+  );
+}
+
 function ColumnRow({
   column,
   onChange,
@@ -279,6 +340,9 @@ export function DocsApp(): JSX.Element {
         value={doc.description}
         onChange={(e) => update({ ...doc, description: e.target.value })}
       />
+
+      <label className="dp-label">Tags</label>
+      <TagsEditor tags={doc.tags} onChange={(tags) => update({ ...doc, tags })} />
 
       <div className="dp-columns-header">
         <label className="dp-label">Columns</label>

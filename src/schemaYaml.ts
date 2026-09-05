@@ -1,9 +1,10 @@
 /**
- * PURE: read and write a model's `schema.yml` doc block (description, column
- * descriptions, column tests) via round-trip YAML editing — other content in
- * the file (other models, comments, formatting) is left untouched. Supports
- * both the legacy `tests:` key and the current `data_tests:` key, preserving
- * whichever one a given model block already uses.
+ * PURE: read and write a model's `schema.yml` doc block (description, tags,
+ * column descriptions, column tests) via round-trip YAML editing — other
+ * content in the file (other models, comments, formatting) is left
+ * untouched. Supports both the legacy `tests:` key and the current
+ * `data_tests:` key, preserving whichever one a given model block already
+ * uses.
  */
 import { Document, isMap, isSeq, parseDocument, type YAMLMap, type YAMLSeq } from 'yaml';
 
@@ -22,6 +23,7 @@ export interface ColumnDoc {
 
 export interface ModelDoc {
   description: string;
+  tags: string[];
   columns: ColumnDoc[];
 }
 
@@ -112,15 +114,17 @@ function findModelMap(modelsSeq: YAMLSeq | undefined, modelName: string): YAMLMa
  */
 export function readModelDoc(yamlText: string, modelName: string): ModelDoc {
   if (!yamlText.trim()) {
-    return { description: '', columns: [] };
+    return { description: '', tags: [], columns: [] };
   }
   const doc = parseDocument(yamlText);
   const modelMap = findModelMap(findModelsSeq(doc), modelName);
   if (!modelMap) {
-    return { description: '', columns: [] };
+    return { description: '', tags: [], columns: [] };
   }
 
   const description = stringOr(modelMap.get('description'), '');
+  const tagsNode = modelMap.get('tags');
+  const tags = isSeq(tagsNode) ? (tagsNode.toJSON() as unknown[]).map(String) : [];
   const columnsNode = modelMap.get('columns');
   const columns: ColumnDoc[] = [];
   if (isSeq(columnsNode)) {
@@ -138,7 +142,7 @@ export function readModelDoc(yamlText: string, modelName: string): ModelDoc {
       });
     }
   }
-  return { description, columns };
+  return { description, tags, columns };
 }
 
 /** True when `yamlText` already has a doc block for `modelName`. */
@@ -181,6 +185,13 @@ export function applyModelDoc(yamlText: string, modelName: string, modelDoc: Mod
     modelMap.set('description', modelDoc.description);
   } else {
     modelMap.delete('description');
+  }
+
+  const tags = modelDoc.tags.map((t) => t.trim()).filter(Boolean);
+  if (tags.length > 0) {
+    modelMap.set('tags', doc.createNode(tags));
+  } else {
+    modelMap.delete('tags');
   }
 
   if (modelDoc.columns.length > 0) {

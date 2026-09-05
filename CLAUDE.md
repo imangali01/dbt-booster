@@ -82,8 +82,9 @@ src/
                                 preview a right-clicked node); Refresh = dbt parse + reload
   protocol.ts             PURE  ExtensionToWebview / WebviewToExtension message types
   schemaYaml.ts           PURE  round-trip schema.yml editing via the `yaml` package's Document
-                                API — readModelDoc / hasModelDoc / applyModelDoc; only the target
-                                model's node is touched, rest of the file passes through as-is
+                                API — readModelDoc / hasModelDoc / applyModelDoc; ModelDoc carries
+                                description, tags, columns; only the target model's node is
+                                touched, rest of the file passes through as-is
   docsProtocol.ts         PURE  DocsExtensionToWebview / DocsWebviewToExtension message types
   docsPanelProvider.ts    GLUE  DocsPanelProvider — "Docs" webview view, its own Panel-area tab
                                 (separate viewsContainer from Lineage's); resolves the active
@@ -156,13 +157,14 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 14 | Extension icon + Lineage panel icon | ✅ done (v0.0.15) |
 | 15 | Docs editor (schema.yml) | ✅ done (v0.0.16, Panel-tab + dup-test fix in v0.0.17) |
 | 16 | Activity Bar — dbt project info sidebar | ✅ done (v0.0.18) |
+| 17 | Docs editor — model tags | ✅ done (v0.0.19) |
 
-The original 8-ticket backlog is complete; 09–16 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–17 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
-motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 76 vitest
-tests passing. Branch `main`, 20 commits, nothing pushed. Anything past this point needs scope
+motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 85 vitest
+tests passing. Branch `main`, 21 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
 ## Stack

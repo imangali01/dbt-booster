@@ -3,12 +3,12 @@ import { applyModelDoc, hasModelDoc, readModelDoc, type ModelDoc } from '../src/
 
 describe('readModelDoc', () => {
   it('returns an empty doc for blank text', () => {
-    expect(readModelDoc('', 'orders')).toEqual({ description: '', columns: [] });
+    expect(readModelDoc('', 'orders')).toEqual({ description: '', tags: [], columns: [] });
   });
 
   it('returns an empty doc when the model is not documented yet', () => {
     const yaml = 'version: 2\nmodels:\n  - name: customers\n    description: people\n';
-    expect(readModelDoc(yaml, 'orders')).toEqual({ description: '', columns: [] });
+    expect(readModelDoc(yaml, 'orders')).toEqual({ description: '', tags: [], columns: [] });
   });
 
   it('reads description and columns', () => {
@@ -27,6 +27,7 @@ describe('readModelDoc', () => {
     ].join('\n');
     expect(readModelDoc(yaml, 'orders')).toEqual({
       description: 'One row per order',
+      tags: [],
       columns: [
         {
           name: 'id',
@@ -35,6 +36,16 @@ describe('readModelDoc', () => {
         },
       ],
     });
+  });
+
+  it('reads tags', () => {
+    const yaml = ['models:', '  - name: orders', '    tags: [finance, core]', ''].join('\n');
+    expect(readModelDoc(yaml, 'orders').tags).toEqual(['finance', 'core']);
+  });
+
+  it('defaults to no tags when none are set', () => {
+    const yaml = ['models:', '  - name: orders', '    description: x', ''].join('\n');
+    expect(readModelDoc(yaml, 'orders').tags).toEqual([]);
   });
 
   it('reads the legacy tests: key too', () => {
@@ -108,6 +119,7 @@ describe('applyModelDoc', () => {
   it('creates a brand new file from blank text', () => {
     const doc: ModelDoc = {
       description: 'One row per order',
+      tags: [],
       columns: [{ name: 'id', description: 'PK', tests: [{ kind: 'not_null' }] }],
     };
     const out = applyModelDoc('', 'orders', doc);
@@ -126,6 +138,7 @@ describe('applyModelDoc', () => {
     ].join('\n');
     const out = applyModelDoc(original, 'orders', {
       description: 'One row per order',
+      tags: [],
       columns: [],
     });
     expect(out).toContain('# hand-written comment');
@@ -148,10 +161,12 @@ describe('applyModelDoc', () => {
     ].join('\n');
     const out = applyModelDoc(original, 'orders', {
       description: 'new description',
+      tags: [],
       columns: [{ name: 'id', description: 'the key', tests: [{ kind: 'not_null' }] }],
     });
     expect(readModelDoc(out, 'orders')).toEqual({
       description: 'new description',
+      tags: [],
       columns: [{ name: 'id', description: 'the key', tests: [{ kind: 'not_null' }] }],
     });
     expect(readModelDoc(out, 'customers').description).toBe('untouched');
@@ -161,6 +176,7 @@ describe('applyModelDoc', () => {
     const original = 'models:\n  - name: orders\n    columns:\n      - name: id\n        tests:\n          - unique\n';
     const out = applyModelDoc(original, 'orders', {
       description: '',
+      tags: [],
       columns: [{ name: 'id', description: '', tests: [{ kind: 'not_null' }] }],
     });
     expect(out).toContain('tests:');
@@ -170,6 +186,7 @@ describe('applyModelDoc', () => {
   it('defaults new model entries to data_tests', () => {
     const out = applyModelDoc('', 'orders', {
       description: '',
+      tags: [],
       columns: [{ name: 'id', description: '', tests: [{ kind: 'unique' }] }],
     });
     expect(out).toContain('data_tests:');
@@ -178,6 +195,7 @@ describe('applyModelDoc', () => {
   it('round-trips relationships and accepted_values tests', () => {
     const doc: ModelDoc = {
       description: '',
+      tags: [],
       columns: [
         {
           name: 'customer_id',
@@ -196,8 +214,32 @@ describe('applyModelDoc', () => {
   });
 
   it('omits empty description and empty columns rather than writing blanks', () => {
-    const out = applyModelDoc('', 'orders', { description: '', columns: [] });
+    const out = applyModelDoc('', 'orders', { description: '', tags: [], columns: [] });
     expect(out).not.toContain('description');
     expect(out).not.toContain('columns');
+  });
+
+  it('round-trips tags and omits the key when empty', () => {
+    const doc: ModelDoc = { description: '', tags: ['finance', 'core'], columns: [] };
+    const out = applyModelDoc('', 'orders', doc);
+    expect(readModelDoc(out, 'orders')).toEqual(doc);
+    expect(out).toContain('tags:');
+
+    const withoutTags = applyModelDoc(out, 'orders', { description: '', tags: [], columns: [] });
+    expect(withoutTags).not.toContain('tags:');
+  });
+
+  it('updates tags on an existing model entry without disturbing others', () => {
+    const original = [
+      'models:',
+      '  - name: orders',
+      '    tags: [finance]',
+      '  - name: customers',
+      '    tags: [core]',
+      '',
+    ].join('\n');
+    const out = applyModelDoc(original, 'orders', { description: '', tags: ['finance', 'billing'], columns: [] });
+    expect(readModelDoc(out, 'orders').tags).toEqual(['finance', 'billing']);
+    expect(readModelDoc(out, 'customers').tags).toEqual(['core']);
   });
 });
