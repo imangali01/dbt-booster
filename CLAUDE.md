@@ -103,7 +103,9 @@ src/
   docsPanelProvider.ts    GLUE  DocsPanelProvider — "Docs" webview view, its own Panel-area tab
                                 (separate viewsContainer from Lineage's); resolves the active
                                 model, finds its yml via manifestStore.docsTarget() (patch_path,
-                                else <model dir>/schema.yml), reads/writes on save
+                                else <model dir>/schema.yml), reads/writes on save; sends a
+                                project-relative display path (not the absolute one) and opens
+                                the yml file via vscode.open on the webview's `openYaml` message
   webview/
     index.tsx             React bootstrap — routes on the root div's data-view ("lineage" |
                            "docs") to <App/> or <DocsApp/>
@@ -169,7 +171,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 12 | Preview UX polish + configurable row limit | ✅ done (v0.0.13) |
 | 13 | Lineage node colour from `dbt_project.yml` | ✅ done (v0.0.14) |
 | 14 | Extension icon + Lineage panel icon | ✅ done (v0.0.15) |
-| 15 | Docs editor (schema.yml) | ✅ done (v0.0.16, Panel-tab + dup-test fix in v0.0.17) |
+| 15 | Docs editor (schema.yml) | ✅ done (v0.0.16, Panel-tab + dup-test fix in v0.0.17, relative clickable yml path in v0.0.23) |
 | 16 | Activity Bar — dbt project info sidebar | ✅ done (v0.0.18) |
 | 17 | Docs editor — model tags | ✅ done (v0.0.19, config.tags bug fixed in v0.0.21, flow style in v0.0.22) |
 | 18 | Activity Bar — active-model context sections (tests/parents/children/docs) | ✅ done (v0.0.20) |
@@ -181,8 +183,9 @@ mojibake, then a follow-up once that turned out to be masking a "dbt not found" 
 motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). Also two
 fixes after ticket 17: model tags were written/read at a bare top-level `tags:` key, which dbt
 silently ignores — dbt only applies `config.tags` — fixed in v0.0.21; then tags were switched to
-flow style (`tags: [a, b]`, no bracket padding) in v0.0.22. 89 vitest tests passing. Branch
-`main`, 24 commits, nothing pushed. Anything past this point needs scope
+flow style (`tags: [a, b]`, no bracket padding) in v0.0.22; then the Docs panel's yml path was
+made project-relative and clickable-to-open in v0.0.23. 89 vitest tests passing. Branch `main`,
+25 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
 ## Stack

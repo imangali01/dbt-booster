@@ -202,6 +202,15 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.dp-path:hover {
+  opacity: 1;
+  text-decoration: underline;
+  color: var(--vscode-textLink-foreground, #3794ff);
 }
 
 .dp-error {

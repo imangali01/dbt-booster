@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { ManifestStore } from './manifestStore';
 import type { DocsExtensionToWebview, DocsWebviewToExtension } from './docsProtocol';
 import { applyModelDoc, readModelDoc, type ModelDoc } from './schemaYaml';
@@ -64,6 +65,9 @@ export class DocsPanelProvider implements vscode.WebviewViewProvider, vscode.Dis
       case 'save':
         await this.save(msg.doc);
         break;
+      case 'openYaml':
+        await this.openYaml();
+        break;
     }
   }
 
@@ -85,10 +89,29 @@ export class DocsPanelProvider implements vscode.WebviewViewProvider, vscode.Dis
       this.post({
         type: 'doc',
         modelName: target.modelName,
-        yamlPath: target.yamlPath,
+        yamlPath: this.displayPath(target.yamlPath),
         doc: readModelDoc(yamlText, target.modelName),
       });
     });
+  }
+
+  private async openYaml(): Promise<void> {
+    const centreId = this.resolveCentreModelId();
+    const target = centreId ? this.store.docsTarget(centreId) : undefined;
+    if (!target) {
+      return;
+    }
+    await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(target.yamlPath));
+  }
+
+  /** `yamlPath` relative to the project, prefixed with the project folder's own name. */
+  private displayPath(yamlPath: string): string {
+    const root = this.store.activeProjectRoot;
+    if (!root) {
+      return yamlPath;
+    }
+    const rel = path.relative(root, yamlPath).split(path.sep).join('/');
+    return `${path.basename(root)}/${rel}`;
   }
 
   private async save(doc: ModelDoc): Promise<void> {

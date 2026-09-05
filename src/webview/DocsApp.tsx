@@ -329,7 +329,19 @@ export function DocsApp(): JSX.Element {
         {dirty && !saving ? <span className="dp-dirty">Unsaved changes</span> : null}
       </div>
       {saveError ? <div className="dp-error">{saveError}</div> : null}
-      <div className="dp-path" title={state.yamlPath}>
+      <div
+        className="dp-path"
+        role="button"
+        tabIndex={0}
+        title={`Open ${state.yamlPath}`}
+        onClick={() => vscode.postMessage({ type: 'openYaml' })}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            vscode.postMessage({ type: 'openYaml' });
+          }
+        }}
+      >
         {state.yamlPath}
       </div>
 
