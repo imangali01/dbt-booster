@@ -4,7 +4,8 @@
  * content in the file (other models, comments, formatting) is left
  * untouched. Supports both the legacy `tests:` key and the current
  * `data_tests:` key, preserving whichever one a given model block already
- * uses.
+ * uses. Tags are stored under `config.tags` — the only place dbt actually
+ * applies model-level tags set in a properties file — see `writeTags`.
  */
 import { Document, isMap, isSeq, parseDocument, type YAMLMap, type YAMLSeq } from 'yaml';
 
@@ -123,8 +124,7 @@ export function readModelDoc(yamlText: string, modelName: string): ModelDoc {
   }
 
   const description = stringOr(modelMap.get('description'), '');
-  const tagsNode = modelMap.get('tags');
-  const tags = isSeq(tagsNode) ? (tagsNode.toJSON() as unknown[]).map(String) : [];
+  const tags = readTags(modelMap);
   const columnsNode = modelMap.get('columns');
   const columns: ColumnDoc[] = [];
   if (isSeq(columnsNode)) {
@@ -187,12 +187,7 @@ export function applyModelDoc(yamlText: string, modelName: string, modelDoc: Mod
     modelMap.delete('description');
   }
 
-  const tags = modelDoc.tags.map((t) => t.trim()).filter(Boolean);
-  if (tags.length > 0) {
-    modelMap.set('tags', doc.createNode(tags));
-  } else {
-    modelMap.delete('tags');
-  }
+  writeTags(doc, modelMap, modelDoc.tags);
 
   if (modelDoc.columns.length > 0) {
     const columnsPlain = modelDoc.columns.map((col) => {
@@ -211,6 +206,45 @@ export function applyModelDoc(yamlText: string, modelName: string, modelDoc: Mod
   }
 
   return doc.toString();
+}
+
+/**
+ * dbt only applies model tags set under `config: tags: [...]` in a schema.yml
+ * properties file — a bare top-level `tags:` sibling of `name:`/`description:`
+ * is not a recognised property and is silently ignored by dbt. Read from
+ * `config.tags` first; fall back to a legacy top-level `tags:` (in case one
+ * was hand-written, or written by an earlier buggy version of this
+ * extension) so existing values aren't dropped from the form — `applyModelDoc`
+ * always normalises back to `config.tags` on the next save.
+ */
+function readTags(modelMap: YAMLMap): string[] {
+  const configNode = modelMap.get('config');
+  const configTags = isMap(configNode) ? configNode.get('tags') : undefined;
+  if (isSeq(configTags)) {
+    return (configTags.toJSON() as unknown[]).map(String);
+  }
+  const legacyTags = modelMap.get('tags');
+  return isSeq(legacyTags) ? (legacyTags.toJSON() as unknown[]).map(String) : [];
+}
+
+function writeTags(doc: Document, modelMap: YAMLMap, tags: string[]): void {
+  modelMap.delete('tags');
+  const cleaned = tags.map((t) => t.trim()).filter(Boolean);
+
+  const existingConfig = modelMap.get('config', true);
+  const configMap: YAMLMap = isMap(existingConfig) ? existingConfig : (doc.createNode({}) as YAMLMap);
+
+  if (cleaned.length > 0) {
+    configMap.set('tags', doc.createNode(cleaned));
+  } else {
+    configMap.delete('tags');
+  }
+
+  if (configMap.items.length > 0) {
+    modelMap.set('config', configMap);
+  } else {
+    modelMap.delete('config');
+  }
 }
 
 function detectTestsKey(modelMap: YAMLMap): typeof TESTS_KEY | typeof LEGACY_TESTS_KEY {

@@ -38,7 +38,18 @@ describe('readModelDoc', () => {
     });
   });
 
-  it('reads tags', () => {
+  it('reads tags from config.tags — the key dbt actually applies', () => {
+    const yaml = [
+      'models:',
+      '  - name: orders',
+      '    config:',
+      '      tags: [finance, core]',
+      '',
+    ].join('\n');
+    expect(readModelDoc(yaml, 'orders').tags).toEqual(['finance', 'core']);
+  });
+
+  it('falls back to a legacy top-level tags: for reading', () => {
     const yaml = ['models:', '  - name: orders', '    tags: [finance, core]', ''].join('\n');
     expect(readModelDoc(yaml, 'orders').tags).toEqual(['finance', 'core']);
   });
@@ -219,13 +230,15 @@ describe('applyModelDoc', () => {
     expect(out).not.toContain('columns');
   });
 
-  it('round-trips tags and omits the key when empty', () => {
+  it('round-trips tags under config.tags and omits config when empty', () => {
     const doc: ModelDoc = { description: '', tags: ['finance', 'core'], columns: [] };
     const out = applyModelDoc('', 'orders', doc);
     expect(readModelDoc(out, 'orders')).toEqual(doc);
+    expect(out).toContain('config:');
     expect(out).toContain('tags:');
 
     const withoutTags = applyModelDoc(out, 'orders', { description: '', tags: [], columns: [] });
+    expect(withoutTags).not.toContain('config:');
     expect(withoutTags).not.toContain('tags:');
   });
 
@@ -233,13 +246,36 @@ describe('applyModelDoc', () => {
     const original = [
       'models:',
       '  - name: orders',
-      '    tags: [finance]',
+      '    config:',
+      '      tags: [finance]',
       '  - name: customers',
-      '    tags: [core]',
+      '    config:',
+      '      tags: [core]',
       '',
     ].join('\n');
     const out = applyModelDoc(original, 'orders', { description: '', tags: ['finance', 'billing'], columns: [] });
     expect(readModelDoc(out, 'orders').tags).toEqual(['finance', 'billing']);
     expect(readModelDoc(out, 'customers').tags).toEqual(['core']);
+  });
+
+  it('preserves other config keys (e.g. materialized) when updating tags', () => {
+    const original = [
+      'models:',
+      '  - name: orders',
+      '    config:',
+      '      materialized: table',
+      '      tags: [finance]',
+      '',
+    ].join('\n');
+    const out = applyModelDoc(original, 'orders', { description: '', tags: ['billing'], columns: [] });
+    expect(out).toContain('materialized: table');
+    expect(readModelDoc(out, 'orders').tags).toEqual(['billing']);
+  });
+
+  it('migrates a legacy top-level tags: to config.tags on save', () => {
+    const original = 'models:\n  - name: orders\n    tags: [finance]\n';
+    const out = applyModelDoc(original, 'orders', { description: '', tags: ['finance'], columns: [] });
+    expect(out).toContain('config:');
+    expect(readModelDoc(out, 'orders').tags).toEqual(['finance']);
   });
 });
