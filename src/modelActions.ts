@@ -7,21 +7,27 @@ import { DEFAULT_PREVIEW_LIMIT } from './dbtShow';
 export type DbtAction = 'run' | 'test' | 'build' | 'preview';
 
 /**
- * How much of the DAG around a model to include in a `run`, via dbt's graph
- * operators: `model` selects just the model, `upstream` selects `+model` (the
- * model and all its ancestors), `downstream` selects `model+` (the model and
- * all its descendants). Only the Run title-bar button offers a choice here —
- * every other action (Test / Build / Preview / graph node actions) stays
- * scoped to the model alone.
+ * How much of the DAG around a model to include in a run/build, via dbt's
+ * graph operators: `model` selects just the model, `upstream` selects
+ * `+model` (the model and all its ancestors), `downstream` selects `model+`
+ * (the model and all its descendants), `both` selects `+model+` (ancestors,
+ * the model, and descendants). Only the Run and Build title-bar buttons'
+ * "…With…" dropdowns offer a choice here — Test / Preview / graph node
+ * actions stay scoped to the model alone.
  */
-export type RunScope = 'model' | 'upstream' | 'downstream';
+export type GraphScope = 'model' | 'upstream' | 'downstream' | 'both';
 
-function selectorFor(name: string, scope: RunScope): string {
+/** Actions whose title-bar button offers a scope dropdown. */
+export type ScopedAction = 'run' | 'build';
+
+function selectorFor(name: string, scope: GraphScope): string {
   switch (scope) {
     case 'upstream':
       return `+${name}`;
     case 'downstream':
       return `${name}+`;
+    case 'both':
+      return `+${name}+`;
     default:
       return name;
   }
@@ -59,9 +65,14 @@ async function previewWithLimitPrompt(name: string, projectRoot: string): Promis
   void showPreview(name, projectRoot, Number(entered));
 }
 
-/** Run `dbt run --select <selector>` for `name`, widened per `scope`. */
-export function runModelWithScope(scope: RunScope, name: string, projectRoot: string): void {
-  runDbt(['run', '--select', selectorFor(name, scope)], projectRoot);
+/** Run `dbt <action> --select <selector>` for `name`, widened per `scope`. */
+export function runModelWithScope(
+  action: ScopedAction,
+  scope: GraphScope,
+  name: string,
+  projectRoot: string,
+): void {
+  runDbt([action, '--select', selectorFor(name, scope)], projectRoot);
 }
 
 const NOT_RESOLVABLE_MESSAGE =
@@ -92,12 +103,16 @@ export function runActiveModelAction(action: DbtAction, manifestStore: ManifestS
   performModelAction(action, resolved.modelName, resolved.projectRoot);
 }
 
-/** Same resolution as {@link runActiveModelAction}, for the Run-variants dropdown. */
-export function runActiveModelWithScope(scope: RunScope, manifestStore: ManifestStore): void {
+/** Same resolution as {@link runActiveModelAction}, for the Run/Build "…With…" dropdowns. */
+export function runActiveModelWithScope(
+  action: ScopedAction,
+  scope: GraphScope,
+  manifestStore: ManifestStore,
+): void {
   const resolved = resolveActiveModel(manifestStore);
   if (!resolved) {
     void vscode.window.showErrorMessage(NOT_RESOLVABLE_MESSAGE);
     return;
   }
-  runModelWithScope(scope, resolved.modelName, resolved.projectRoot);
+  runModelWithScope(action, scope, resolved.modelName, resolved.projectRoot);
 }

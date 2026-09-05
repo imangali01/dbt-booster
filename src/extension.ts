@@ -124,16 +124,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       runActiveModelAction('run', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.runModelWithUpstream', () =>
-      runActiveModelWithScope('upstream', manifestStore),
+      runActiveModelWithScope('run', 'upstream', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.runModelWithDownstream', () =>
-      runActiveModelWithScope('downstream', manifestStore),
+      runActiveModelWithScope('run', 'downstream', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.runModelWithBoth', () =>
+      runActiveModelWithScope('run', 'both', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.testModel', () =>
       runActiveModelAction('test', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.buildModel', () =>
       runActiveModelAction('build', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.buildModelWithUpstream', () =>
+      runActiveModelWithScope('build', 'upstream', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.buildModelWithDownstream', () =>
+      runActiveModelWithScope('build', 'downstream', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.buildModelWithBoth', () =>
+      runActiveModelWithScope('build', 'both', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.previewData', () =>
       runActiveModelAction('preview', manifestStore),

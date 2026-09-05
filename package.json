@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "license": "MIT",
   "icon": "media/dbt-logo.png",
   "publisher": "imangali01",
@@ -60,6 +60,11 @@
         "category": "dbt booster"
       },
       {
+        "command": "dbtBooster.runModelWithBoth",
+        "title": "Run with Upstream and Downstream (+model+)",
+        "category": "dbt booster"
+      },
+      {
         "command": "dbtBooster.testModel",
         "title": "Test Model",
         "category": "dbt booster",
@@ -70,6 +75,21 @@
         "title": "Build Model",
         "category": "dbt booster",
         "icon": "$(package)"
+      },
+      {
+        "command": "dbtBooster.buildModelWithUpstream",
+        "title": "Build with Upstream (+model)",
+        "category": "dbt booster"
+      },
+      {
+        "command": "dbtBooster.buildModelWithDownstream",
+        "title": "Build with Downstream (model+)",
+        "category": "dbt booster"
+      },
+      {
+        "command": "dbtBooster.buildModelWithBoth",
+        "title": "Build with Upstream and Downstream (+model+)",
+        "category": "dbt booster"
       },
       {
         "command": "dbtBooster.previewData",
@@ -115,11 +135,27 @@
           "when": "dbtBooster.projectDetected"
         },
         {
+          "command": "dbtBooster.runModelWithBoth",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
           "command": "dbtBooster.testModel",
           "when": "dbtBooster.projectDetected"
         },
         {
           "command": "dbtBooster.buildModel",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.buildModelWithUpstream",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.buildModelWithDownstream",
+          "when": "dbtBooster.projectDetected"
+        },
+        {
+          "command": "dbtBooster.buildModelWithBoth",
           "when": "dbtBooster.projectDetected"
         },
         {
@@ -160,9 +196,14 @@
           "group": "navigation@4"
         },
         {
-          "command": "dbtBooster.previewData",
+          "submenu": "dbtBooster.buildVariants",
           "when": "resourceExtname == .sql && dbtBooster.projectDetected",
           "group": "navigation@5"
+        },
+        {
+          "command": "dbtBooster.previewData",
+          "when": "resourceExtname == .sql && dbtBooster.projectDetected",
+          "group": "navigation@6"
         }
       ],
       "dbtBooster.runVariants": [
@@ -177,6 +218,28 @@
         {
           "command": "dbtBooster.runModelWithDownstream",
           "group": "1_scope@3"
+        },
+        {
+          "command": "dbtBooster.runModelWithBoth",
+          "group": "1_scope@4"
+        }
+      ],
+      "dbtBooster.buildVariants": [
+        {
+          "command": "dbtBooster.buildModel",
+          "group": "1_scope@1"
+        },
+        {
+          "command": "dbtBooster.buildModelWithUpstream",
+          "group": "1_scope@2"
+        },
+        {
+          "command": "dbtBooster.buildModelWithDownstream",
+          "group": "1_scope@3"
+        },
+        {
+          "command": "dbtBooster.buildModelWithBoth",
+          "group": "1_scope@4"
         }
       ]
     },
@@ -184,6 +247,11 @@
       {
         "id": "dbtBooster.runVariants",
         "label": "Run With…",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "id": "dbtBooster.buildVariants",
+        "label": "Build With…",
         "icon": "$(chevron-down)"
       }
     ],

@@ -20,12 +20,13 @@ account, no AI features.
 These were settled with the user during a grilling session. Honour them.
 
 - **Buttons are exactly: Run, Test, Build, Preview.** No "Compile" button.
-- **Selectors target the model only, with one narrow exception.** Test / Build / Preview and the
-  lineage graph's node context menu always use `--select <model>` — never `+model` / `model+`.
-  The one exception (ticket 10, added after the original grilling session): a small "Run With…"
-  dropdown next to the editor-title Run button offers "Run Model" (unchanged), "Run with
-  Upstream (`+model`)", and "Run with Downstream (`model+`)". Do not spread graph operators to
-  any other action without the user asking again.
+- **Selectors target the model only, with one narrow exception.** Test / Preview and the lineage
+  graph's node context menu always use `--select <model>` — never `+model` / `model+`. The
+  exception (ticket 10, widened in ticket 19): the editor-title **Run** and **Build** buttons
+  each have a "…With…" dropdown (chevron submenu) offering all four scopes — the plain model
+  (unchanged button), `+model` (upstream), `model+` (downstream), `+model+` (both). Do not spread
+  graph operators to any other action (Test, Preview, graph context menu) without the user asking
+  again.
 - **dbt resolves its own `profiles.yml`.** Never pass `--profiles-dir` or `--target`. No `.env`
   loading, no environment shims.
 - **One user setting only: `dbtBooster.dbtPath`** (default `dbt`). Lineage depth (2 up / 2 down)
@@ -76,8 +77,9 @@ src/
   modelActions.ts         GLUE  performModelAction(action, name, root) — run|test|build in the
                                 terminal or open the preview panel; runActiveModelAction() resolves
                                 that from the active editor for the title-bar buttons/palette;
-                                runModelWithScope/runActiveModelWithScope add the Run-variants
-                                dropdown's +model / model+ selectors (Run button only)
+                                runModelWithScope/runActiveModelWithScope add the Run/Build "…
+                                With…" dropdowns' model / +model / model+ / +model+ selectors
+                                (GraphScope, ScopedAction — Run and Build buttons only)
   dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) — `dbt show --output json` as a
                                 background child_process (not the terminal), for Preview;
                                 DEFAULT_PREVIEW_LIMIT = 20
@@ -166,7 +168,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 07 | Preview data | ✅ done (v0.0.7) |
 | 08 | Run actions from graph nodes | ✅ done (v0.0.8) |
 | 09 | Lineage panel — draggable nodes | ✅ done (v0.0.9) |
-| 10 | Run-variants dropdown (`+model` / `model+`) | ✅ done (v0.0.11) |
+| 10 | Run-variants dropdown (`+model` / `model+`) | ✅ done (v0.0.11, extended in ticket 19) |
 | 11 | Python environment picker (status bar) | ✅ done (v0.0.12) |
 | 12 | Preview UX polish + configurable row limit | ✅ done (v0.0.13) |
 | 13 | Lineage node colour from `dbt_project.yml` | ✅ done (v0.0.14) |
@@ -175,8 +177,9 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 16 | Activity Bar — dbt project info sidebar | ✅ done (v0.0.18) |
 | 17 | Docs editor — model tags | ✅ done (v0.0.19, config.tags bug fixed in v0.0.21, flow style in v0.0.22) |
 | 18 | Activity Bar — active-model context sections (tests/parents/children/docs) | ✅ done (v0.0.20) |
+| 19 | Run/Build With… — add `+model+`, extend the dropdown to Build | ✅ done (v0.0.24) |
 
-The original 8-ticket backlog is complete; 09–18 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–19 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
@@ -185,7 +188,7 @@ fixes after ticket 17: model tags were written/read at a bare top-level `tags:` 
 silently ignores — dbt only applies `config.tags` — fixed in v0.0.21; then tags were switched to
 flow style (`tags: [a, b]`, no bracket padding) in v0.0.22; then the Docs panel's yml path was
 made project-relative and clickable-to-open in v0.0.23. 89 vitest tests passing. Branch `main`,
-25 commits, nothing pushed. Anything past this point needs scope
+26 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
 ## Stack
