@@ -272,6 +272,15 @@ describe('applyModelDoc', () => {
     expect(readModelDoc(out, 'orders').tags).toEqual(['billing']);
   });
 
+  it('writes tags in flow style — tags: [a, b] — not one per line', () => {
+    const out = applyModelDoc('', 'orders', {
+      description: '',
+      tags: ['samruk_energo', 'kegoc'],
+      columns: [],
+    });
+    expect(out).toContain('tags: [samruk_energo, kegoc]');
+  });
+
   it('migrates a legacy top-level tags: to config.tags on save', () => {
     const original = 'models:\n  - name: orders\n    tags: [finance]\n';
     const out = applyModelDoc(original, 'orders', { description: '', tags: ['finance'], columns: [] });

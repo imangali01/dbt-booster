@@ -205,7 +205,8 @@ export function applyModelDoc(yamlText: string, modelName: string, modelDoc: Mod
     modelMap.delete('columns');
   }
 
-  return doc.toString();
+  // No padding inside flow collections: `tags: [a, b]`, not `tags: [ a, b ]`.
+  return doc.toString({ flowCollectionPadding: false });
 }
 
 /**
@@ -235,7 +236,12 @@ function writeTags(doc: Document, modelMap: YAMLMap, tags: string[]): void {
   const configMap: YAMLMap = isMap(existingConfig) ? existingConfig : (doc.createNode({}) as YAMLMap);
 
   if (cleaned.length > 0) {
-    configMap.set('tags', doc.createNode(cleaned));
+    const tagsNode = doc.createNode(cleaned);
+    if (isSeq(tagsNode)) {
+      // Render as `tags: [a, b]` rather than one `- a` / `- b` per line.
+      tagsNode.flow = true;
+    }
+    configMap.set('tags', tagsNode);
   } else {
     configMap.delete('tags');
   }
