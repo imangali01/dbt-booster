@@ -10,6 +10,7 @@
       "resource_type": "model",
       "package_name": "jaffle_sample",
       "original_file_path": "models/customers.sql",
+      "schema": "public",
       "config": { "materialized": "view", "docs": { "node_color": "#0963b7" } },
       "depends_on": { "macros": [], "nodes": [] }
     },
@@ -19,8 +20,25 @@
       "resource_type": "model",
       "package_name": "jaffle_sample",
       "original_file_path": "models/orders.sql",
+      "schema": "public",
       "config": { "materialized": "table", "docs": { "node_color": "#eda405" } },
       "depends_on": { "macros": [], "nodes": ["model.jaffle_sample.customers"] }
+    },
+    "test.jaffle_sample.not_null_orders_id": {
+      "unique_id": "test.jaffle_sample.not_null_orders_id",
+      "name": "not_null_orders_id",
+      "resource_type": "test",
+      "package_name": "jaffle_sample",
+      "original_file_path": "models/schema.yml",
+      "depends_on": { "macros": [], "nodes": ["model.jaffle_sample.orders"] }
+    },
+    "test.jaffle_sample.unique_orders_id": {
+      "unique_id": "test.jaffle_sample.unique_orders_id",
+      "name": "unique_orders_id",
+      "resource_type": "test",
+      "package_name": "jaffle_sample",
+      "original_file_path": "models/schema.yml",
+      "depends_on": { "macros": [], "nodes": ["model.jaffle_sample.orders"] }
     }
   },
   "sources": {},

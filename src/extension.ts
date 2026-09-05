@@ -5,7 +5,13 @@ import { ManifestStore } from './manifestStore';
 import { LineagePanelProvider } from './lineagePanelProvider';
 import { DocsPanelProvider } from './docsPanelProvider';
 import { ProjectInfoProvider } from './projectInfoProvider';
-import { disposeDbtTerminal } from './dbtTerminal';
+import {
+  ChildrenModelsProvider,
+  DocumentationProvider,
+  ModelTestsProvider,
+  ParentModelsProvider,
+} from './activeModelProviders';
+import { disposeDbtTerminal, runDbt } from './dbtTerminal';
 import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
 import { pickPythonEnvironment } from './pythonEnvironmentPicker';
 import { describeDbtPath } from './pythonEnvironments';
@@ -27,12 +33,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   const docsPanel = new DocsPanelProvider(context.extensionUri, manifestStore);
   const projectInfo = new ProjectInfoProvider(registry, manifestStore);
+  const modelTests = new ModelTestsProvider(manifestStore);
+  const parentModels = new ParentModelsProvider(manifestStore);
+  const childrenModels = new ChildrenModelsProvider(manifestStore);
+  const documentation = new DocumentationProvider(manifestStore);
   context.subscriptions.push(
     registry,
     manifestStore,
     lineagePanel,
     docsPanel,
     projectInfo,
+    modelTests,
+    parentModels,
+    childrenModels,
+    documentation,
     { dispose: disposeDbtTerminal },
     vscode.window.registerWebviewViewProvider(LineagePanelProvider.viewId, lineagePanel, {
       webviewOptions: { retainContextWhenHidden: true },
@@ -41,6 +55,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerTreeDataProvider('dbtBooster.projectInfo', projectInfo),
+    vscode.window.registerTreeDataProvider('dbtBooster.modelTests', modelTests),
+    vscode.window.registerTreeDataProvider('dbtBooster.parentModels', parentModels),
+    vscode.window.registerTreeDataProvider('dbtBooster.childrenModels', childrenModels),
+    vscode.window.registerTreeDataProvider('dbtBooster.documentation', documentation),
   );
 
   registry.onDidChangeActive((root) => void manifestStore.setProject(root));
@@ -122,6 +140,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ),
     vscode.commands.registerCommand('dbtBooster.selectPythonEnvironment', () =>
       pickPythonEnvironment(registry.allRoots),
+    ),
+    vscode.commands.registerCommand('dbtBooster.runTestNode', (testName: string, root: string) =>
+      runDbt(['test', '--select', testName], root),
     ),
   );
 

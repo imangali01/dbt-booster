@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "license": "MIT",
   "icon": "media/dbt-logo.png",
   "publisher": "imangali01",
@@ -224,6 +224,22 @@
         }
       ],
       "dbtBoosterActivityBar": [
+        {
+          "id": "dbtBooster.modelTests",
+          "name": "Model Tests"
+        },
+        {
+          "id": "dbtBooster.parentModels",
+          "name": "Parent Models"
+        },
+        {
+          "id": "dbtBooster.childrenModels",
+          "name": "Children Models"
+        },
+        {
+          "id": "dbtBooster.documentation",
+          "name": "Documentation"
+        },
         {
           "id": "dbtBooster.projectInfo",
           "name": "Project"

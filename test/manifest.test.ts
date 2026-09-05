@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   buildLineageSubgraph,
   countModels,
+  directChildren,
+  directParents,
   docsTargetForModel,
   normaliseManifest,
   resolveNodeIdForFile,
   resourceCounts,
+  testsForModel,
   type DbtManifest,
   type ManifestNode,
 } from '../src/manifest';
@@ -274,5 +277,64 @@ describe('resourceCounts', () => {
 
   it('handles a manifest with no sources/nodes at all', () => {
     expect(resourceCounts({})).toEqual({ model: 0, source: 0, seed: 0, snapshot: 0 });
+  });
+});
+
+describe('testsForModel', () => {
+  it('finds test nodes that depend on the model, sorted by name', () => {
+    const m = manifestOf(model('orders'), {
+      unique_id: 'test.p.unique_orders_id',
+      name: 'unique_orders_id',
+      resource_type: 'test',
+      depends_on: { nodes: ['model.p.orders'] },
+    }, {
+      unique_id: 'test.p.not_null_orders_id',
+      name: 'not_null_orders_id',
+      resource_type: 'test',
+      depends_on: { nodes: ['model.p.orders'] },
+    });
+    expect(testsForModel(m, 'model.p.orders').map((t) => t.name)).toEqual([
+      'not_null_orders_id',
+      'unique_orders_id',
+    ]);
+  });
+
+  it('excludes tests on other models', () => {
+    const m = manifestOf(model('orders'), model('customers'), {
+      unique_id: 'test.p.unique_customers_id',
+      name: 'unique_customers_id',
+      resource_type: 'test',
+      depends_on: { nodes: ['model.p.customers'] },
+    });
+    expect(testsForModel(m, 'model.p.orders')).toEqual([]);
+  });
+});
+
+describe('directParents / directChildren', () => {
+  // customers <- orders <- order_items
+  const m = manifestOf(
+    model('customers'),
+    model('orders', ['customers']),
+    model('order_items', ['orders']),
+  );
+
+  it('directParents returns only the immediate upstream nodes', () => {
+    expect(directParents(m, 'model.p.orders').map((n) => n.name)).toEqual(['customers']);
+    expect(directParents(m, 'model.p.customers')).toEqual([]);
+  });
+
+  it('directChildren returns only the immediate downstream nodes', () => {
+    expect(directChildren(m, 'model.p.orders').map((n) => n.name)).toEqual(['order_items']);
+    expect(directChildren(m, 'model.p.order_items')).toEqual([]);
+  });
+
+  it('excludes non-graph dependents/dependencies such as tests', () => {
+    const withTest = manifestOf(model('orders'), {
+      unique_id: 'test.p.unique_orders_id',
+      name: 'unique_orders_id',
+      resource_type: 'test',
+      depends_on: { nodes: ['model.p.orders'] },
+    });
+    expect(directChildren(withTest, 'model.p.orders')).toEqual([]);
   });
 });

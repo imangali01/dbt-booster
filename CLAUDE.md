@@ -50,13 +50,23 @@ src/
   manifest.ts             PURE  buildLineageSubgraph (depth-limited BFS + "＋" expansion,
                                 cycle-safe, carries config.docs.node_color through),
                                 resolveNodeIdForFile (original_file_path → stem),
-                                countModels, normaliseManifest, all the Lineage* types
+                                countModels, resourceCounts, normaliseManifest, all the Lineage*
+                                types, plus one-hop testsForModel / directParents /
+                                directChildren for the Activity Bar's model-context views
   manifestStore.ts        GLUE  ManifestStore — load target/manifest.json, RelativePattern
                                 watcher, missing-manifest "Run dbt parse" prompt,
                                 resolveModelId / lineageAround / absolutePathForNode
-  projectInfoProvider.ts  GLUE  ProjectInfoProvider — TreeDataProvider for the Activity Bar
-                                sidebar (name, root, resource counts, Python env), each row a
-                                shortcut into an existing command
+  treeItems.ts            GLUE  InfoItem — the one flat tree-row type shared by every Activity
+                                Bar view below
+  projectInfoProvider.ts  GLUE  ProjectInfoProvider — TreeDataProvider for the Activity Bar's
+                                "Project" view (name, root, resource counts, Python env), each
+                                row a shortcut into an existing command
+  activeModelProviders.ts GLUE  ModelTestsProvider / ParentModelsProvider / ChildrenModelsProvider
+                                / DocumentationProvider — the Activity Bar's "Model Tests" /
+                                "Parent Models" / "Children Models" / "Documentation" views, all
+                                driven by the active editor's model via a shared
+                                ActiveModelTreeProvider base (refresh wiring only); Documentation
+                                nests schema.yml columns (via schemaYaml.ts) under the model row
   dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand()
   pythonEnvironments.ts   PURE  dbtExecutableInEnv, parseCondaEnvironmentsFile, describeDbtPath
   pythonEnvironmentPicker.ts
@@ -158,13 +168,14 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 15 | Docs editor (schema.yml) | ✅ done (v0.0.16, Panel-tab + dup-test fix in v0.0.17) |
 | 16 | Activity Bar — dbt project info sidebar | ✅ done (v0.0.18) |
 | 17 | Docs editor — model tags | ✅ done (v0.0.19) |
+| 18 | Activity Bar — active-model context sections (tests/parents/children/docs) | ✅ done (v0.0.20) |
 
-The original 8-ticket backlog is complete; 09–17 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–18 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
 motivation for ticket 11 (conda-activated envs are invisible to the Extension Host). 85 vitest
-tests passing. Branch `main`, 21 commits, nothing pushed. Anything past this point needs scope
+tests passing. Branch `main`, 22 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
 ## Stack

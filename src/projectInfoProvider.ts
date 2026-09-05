@@ -5,21 +5,7 @@ import type { ManifestStore } from './manifestStore';
 import type { ProjectRegistry } from './projectRegistry';
 import { resourceCounts } from './manifest';
 import { describeDbtPath } from './pythonEnvironments';
-
-class InfoItem extends vscode.TreeItem {
-  constructor(
-    label: string,
-    opts: { description?: string; icon?: string; command?: vscode.Command; tooltip?: string } = {},
-  ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
-    this.description = opts.description;
-    this.tooltip = opts.tooltip ?? [label, opts.description].filter(Boolean).join(': ');
-    if (opts.icon) {
-      this.iconPath = new vscode.ThemeIcon(opts.icon);
-    }
-    this.command = opts.command;
-  }
-}
+import { InfoItem } from './treeItems';
 
 /**
  * Activity Bar sidebar view: at-a-glance info about the active dbt project —
