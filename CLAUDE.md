@@ -36,7 +36,7 @@ These were settled with the user during a grilling session. Honour them.
 - **Preview panel** (ticket 23) shows the SQL that ran (compiled if this run refreshed
   `target/compiled/…`, else the model source; for inline previews dbt's compiled
   `…/from remote system.sql/sql/inline_query`, else the raw selection — v0.0.29), per-column
-  filter boxes, and the "+ N more rows" control.
+  filter boxes, and the "+ N more rows" control. The SQL block starts collapsed (v0.0.30).
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the

@@ -244,7 +244,7 @@ function render(title: string): string {
 </head>
 <body>
 <h1>Preview: ${escapeHtml(title)} <span class="badge" id="badge"></span></h1>
-<details class="sql" id="sql" hidden open><summary id="sql-summary"></summary><pre id="sql-text"></pre></details>
+<details class="sql" id="sql" hidden><summary id="sql-summary"></summary><pre id="sql-text"></pre></details>
 <div id="content"><div class="message">Running preview…</div></div>
 <div class="footer" id="footer" hidden>
   <span class="status" id="status"></span>
