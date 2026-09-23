@@ -37,7 +37,9 @@ These were settled with the user during a grilling session. Honour them.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
   Command Palette — no new title-bar button, no keybinding. It asks for a row limit exactly like
-  the Preview button does.
+  the Preview button does. Since ticket 22 the title-bar **Preview Data** button also previews
+  the selection when there is a non-blank one, and the whole model otherwise; the graph node
+  context menu's Preview always previews the model.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
   as a background process (not in the terminal) so its JSON output can be parsed.
 - **Lineage panel lives in the bottom Panel area** (next to Terminal / Problems), not the
@@ -100,7 +102,9 @@ src/
                                 With…" dropdowns' model / +model / model+ / +model+ selectors
                                 (GraphScope, ScopedAction — Run and Build buttons only);
                                 previewActiveSelection() — ticket 20's right-click "Preview
-                                Selected SQL", the one action that needs no manifest lookup
+                                Selected SQL", the one action that needs no manifest lookup;
+                                previewActive() — the Preview Data button: selection if any,
+                                else the whole model (ticket 22)
   dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) / runDbtShowInline(sql, cwd, limit)
                                 — arg-building over dbtProcess for `dbt show --output json`, for
                                 Preview; DEFAULT_PREVIEW_LIMIT = 20
@@ -205,6 +209,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 19 | Run/Build With… — add `+model+`, extend the dropdown to Build | ✅ done (v0.0.24) |
 | 20 | Preview Data for a selected SQL fragment (`dbt show --inline`) | ✅ done (v0.0.25) |
 | 21 | Measure where dbt time actually goes (timings + diagnostics command) | ✅ done (v0.0.26) |
+| 22 | Preview Data button previews the selection when there is one | ✅ done (v0.0.27) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage

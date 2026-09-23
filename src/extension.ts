@@ -13,6 +13,7 @@ import {
 } from './activeModelProviders';
 import { disposeDbtTerminal, runDbt } from './dbtTerminal';
 import {
+  previewActive,
   previewActiveSelection,
   runActiveModelAction,
   runActiveModelWithScope,
@@ -155,7 +156,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       runActiveModelWithScope('build', 'both', manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.previewData', () =>
-      runActiveModelAction('preview', manifestStore),
+      previewActive(manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.previewSelectedSql', () =>
       previewActiveSelection(manifestStore),

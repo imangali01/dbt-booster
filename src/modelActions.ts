@@ -138,6 +138,23 @@ export function runActiveModelAction(action: DbtAction, manifestStore: ManifestS
   performModelAction(action, resolved.modelName, resolved.projectRoot);
 }
 
+/**
+ * The Preview Data button / command: with a non-blank selection in the active
+ * editor, preview just that fragment (as {@link previewActiveSelection} does);
+ * otherwise preview the whole active model. The graph's node context menu
+ * does not come through here — it always previews the model.
+ */
+export function previewActive(manifestStore: ManifestStore): void {
+  const editor = vscode.window.activeTextEditor;
+  const hasSelection =
+    editor !== undefined && prepareInlineSql(editor.document.getText(editor.selection)) !== undefined;
+  if (hasSelection) {
+    void previewActiveSelection(manifestStore);
+  } else {
+    runActiveModelAction('preview', manifestStore);
+  }
+}
+
 /** Same resolution as {@link runActiveModelAction}, for the Run/Build "…With…" dropdowns. */
 export function runActiveModelWithScope(
   action: ScopedAction,
