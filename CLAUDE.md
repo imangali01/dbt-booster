@@ -72,7 +72,22 @@ src/
                                 driven by the active editor's model via a shared
                                 ActiveModelTreeProvider base (refresh wiring only); Documentation
                                 nests schema.yml columns (via schemaYaml.ts) under the model row
-  dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand()
+  dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand();
+                                logs its command line (no timing — dbt reports its own there)
+  dbtLog.ts               GLUE  setDbtLog / dbtLog — the one output-channel sink for dbt
+                                invocations, in its own module so dbtTerminal and dbtProcess can
+                                both use it without an import cycle
+  dbtArgs.ts              PURE  splitCommand (`uv run dbt` → program + leading args),
+                                describeArgs (one readable, whitespace-collapsed, truncated line)
+  dbtProcess.ts           GLUE  runDbtCaptured(args, cwd) — THE background dbt spawn: no shell
+                                (see its doc comment), UTF-8 env, ENOENT hint; times every run and
+                                logs total + time-to-first-output
+  timing.ts               PURE  formatDuration, formatTimingReport, explainDbtTimings — the four
+                                diagnostics runs nest, so each phase's own cost is the outer run
+                                minus the inner one, clamped at zero
+  dbtDiagnostics.ts       GLUE  diagnoseDbtPerformance() — the "Diagnose dbt Performance" command:
+                                times `dbt --version`, a full parse, a partial parse and a trivial
+                                `dbt show --inline`, then prints the breakdown to the output channel
   pythonEnvironments.ts   PURE  dbtExecutableInEnv, parseCondaEnvironmentsFile, describeDbtPath
   pythonEnvironmentPicker.ts
                           GLUE  pickPythonEnvironment() — QuickPick over discovered conda/venv
@@ -87,10 +102,8 @@ src/
                                 previewActiveSelection() — ticket 20's right-click "Preview
                                 Selected SQL", the one action that needs no manifest lookup
   dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) / runDbtShowInline(sql, cwd, limit)
-                                — `dbt show --output json` as a background child_process (not the
-                                terminal), for Preview; both share one no-shell spawn, which is
-                                what lets a multi-line --inline payload go as one argv entry;
-                                DEFAULT_PREVIEW_LIMIT = 20
+                                — arg-building over dbtProcess for `dbt show --output json`, for
+                                Preview; DEFAULT_PREVIEW_LIMIT = 20
   sqlSelection.ts         PURE  prepareInlineSql() — an editor selection → { sql, label } for
                                 `dbt show --inline`: trim, drop a trailing `;`, reject blanks,
                                 label from the first non-comment line (INLINE_LABEL_MAX = 40)
@@ -191,8 +204,9 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 18 | Activity Bar — active-model context sections (tests/parents/children/docs) | ✅ done (v0.0.20) |
 | 19 | Run/Build With… — add `+model+`, extend the dropdown to Build | ✅ done (v0.0.24) |
 | 20 | Preview Data for a selected SQL fragment (`dbt show --inline`) | ✅ done (v0.0.25) |
+| 21 | Measure where dbt time actually goes (timings + diagnostics command) | ✅ done (v0.0.26) |
 
-The original 8-ticket backlog is complete; 09–20 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
@@ -200,9 +214,16 @@ motivation for ticket 11 (conda-activated envs are invisible to the Extension Ho
 fixes after ticket 17: model tags were written/read at a bare top-level `tags:` key, which dbt
 silently ignores — dbt only applies `config.tags` — fixed in v0.0.21; then tags were switched to
 flow style (`tags: [a, b]`, no bracket padding) in v0.0.22; then the Docs panel's yml path was
-made project-relative and clickable-to-open in v0.0.23. 103 vitest tests passing. Branch `main`,
-27 commits, nothing pushed. Anything past this point needs scope
+made project-relative and clickable-to-open in v0.0.23. 129 vitest tests passing. Branch `main`,
+28 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
+
+**Open thread — dbt speed.** The user reported Preview and Run/Test/Build both feeling slow.
+Ticket 21 deliberately only measures; the optimisation is still unchosen and must be picked from
+the numbers the "Diagnose dbt Performance" command produces on the user's real project. The
+candidates discussed were (a) cheap flags — `--no-version-check`, `--no-populate-cache`, `--quiet`
+— and (b) a warm dbt process holding a parsed manifest via `dbtRunner`, which is a new subsystem
+and needs its own spec, not a bounded change. Do not add either without agreeing it first.
 
 ## Stack
 

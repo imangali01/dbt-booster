@@ -18,6 +18,8 @@ import {
   runActiveModelWithScope,
 } from './modelActions';
 import { pickPythonEnvironment } from './pythonEnvironmentPicker';
+import { setDbtLog } from './dbtLog';
+import { diagnoseDbtPerformance } from './dbtDiagnostics';
 import { describeDbtPath } from './pythonEnvironments';
 
 let output: vscode.OutputChannel | undefined;
@@ -26,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   output = vscode.window.createOutputChannel('dbt booster');
   const log = (message: string): void => output?.appendLine(`[dbt booster] ${message}`);
   context.subscriptions.push(output);
+  setDbtLog(log);
   log(`activated at ${new Date().toISOString()}`);
 
   const registry = new ProjectRegistry(log);
@@ -160,6 +163,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dbtBooster.selectPythonEnvironment', () =>
       pickPythonEnvironment(registry.allRoots),
     ),
+    vscode.commands.registerCommand('dbtBooster.diagnosePerformance', () => {
+      const root = registry.activeRoot;
+      if (!root) {
+        void vscode.window.showErrorMessage('dbt booster: no dbt project detected.');
+        return;
+      }
+      void diagnoseDbtPerformance(root, log, () => output?.show(true));
+    }),
     vscode.commands.registerCommand('dbtBooster.runTestNode', (testName: string, root: string) =>
       runDbt(['test', '--select', testName], root),
     ),
