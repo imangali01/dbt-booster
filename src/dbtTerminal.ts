@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { dbtLog } from './dbtLog';
+import { terminalArgs } from './dbtArgs';
 
 const TERMINAL_NAME = 'dbt-booster';
 
@@ -23,7 +24,7 @@ export function runDbt(args: string[], cwd: string): void {
     terminalCwd = cwd;
   }
   terminal.show(true);
-  const line = [dbtCommand(), ...args].join(' ');
+  const line = [dbtCommand(), ...terminalArgs(args)].join(' ');
   // No timing here: the command runs in the user's terminal, where dbt reports
   // its own elapsed time. Logging the line is what lets that be lined up with
   // the timed background runs above it in the channel.

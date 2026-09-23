@@ -1,3 +1,4 @@
+import { showArgs } from './dbtArgs';
 import { runDbtCaptured } from './dbtProcess';
 
 /** Row limit offered when the user is asked how much to preview. */
@@ -36,9 +37,6 @@ export function runDbtShowInline(
 }
 
 async function runShow(selector: string[], cwd: string, limit: number): Promise<string> {
-  const { output } = await runDbtCaptured(
-    ['show', ...selector, '--limit', String(limit), '--output', 'json'],
-    cwd,
-  );
+  const { output } = await runDbtCaptured(showArgs(selector, limit), cwd);
   return output;
 }

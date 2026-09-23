@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { showArgs } from './dbtArgs';
 import { runDbtCaptured } from './dbtProcess';
 import { dbtCommand } from './dbtTerminal';
 import {
@@ -21,6 +22,8 @@ import {
  *   2. `dbt parse --no-partial-parse`  + a full parse of every model
  *   3. `dbt parse`                     + a partial parse off the cached manifest
  *   4. `dbt show --inline "select 1"`  + the adapter connecting and querying
+ *                                      (with Preview's own SHOW_FLAGS, so it
+ *                                      times what Preview really runs)
  *
  * `--no-partial-parse` is what makes run 2 cold without touching the project:
  * deleting `target/partial_parse.msgpack` would do the same, but this command
@@ -46,7 +49,7 @@ export async function diagnoseDbtPerformance(
         [
           'inlineShow',
           'inline show',
-          ['show', '--inline', 'select 1 as x', '--limit', '1', '--output', 'json'],
+          showArgs(['--inline', 'select 1 as x'], 1),
         ],
       ];
       const timings = {} as DbtPhaseTimings;

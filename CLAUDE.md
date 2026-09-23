@@ -84,7 +84,8 @@ src/
                                 invocations, in its own module so dbtTerminal and dbtProcess can
                                 both use it without an import cycle
   dbtArgs.ts              PURE  splitCommand (`uv run dbt` → program + leading args),
-                                describeArgs (one readable, whitespace-collapsed, truncated line)
+                                describeArgs (one readable, whitespace-collapsed, truncated line),
+                                BASE_FLAGS / SHOW_FLAGS + showArgs / terminalArgs (ticket 24)
   dbtProcess.ts           GLUE  runDbtCaptured(args, cwd) — THE background dbt spawn: no shell
                                 (see its doc comment), UTF-8 env, ENOENT hint; times every run and
                                 logs total + time-to-first-output
@@ -219,6 +220,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 21 | Measure where dbt time actually goes (timings + diagnostics command) | ✅ done (v0.0.26) |
 | 22 | Preview Data button previews the selection when there is one | ✅ done (v0.0.27) |
 | 23 | Preview panel — shown SQL, "load more" rows, column filters; no limit prompt | ✅ done (v0.0.28) |
+| 24 | Faster Preview — cheap dbt flags, picked from measurements | ✅ done (v0.0.32) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
@@ -232,12 +234,13 @@ made project-relative and clickable-to-open in v0.0.23. 129 vitest tests passing
 28 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
-**Open thread — dbt speed.** The user reported Preview and Run/Test/Build both feeling slow.
-Ticket 21 deliberately only measures; the optimisation is still unchosen and must be picked from
-the numbers the "Diagnose dbt Performance" command produces on the user's real project. The
-candidates discussed were (a) cheap flags — `--no-version-check`, `--no-populate-cache`, `--quiet`
-— and (b) a warm dbt process holding a parsed manifest via `dbtRunner`, which is a new subsystem
-and needs its own spec, not a bounded change. Do not add either without agreeing it first.
+**Open thread — dbt speed.** Option (a), cheap flags, is done (ticket 24, chosen from real
+measurements): every dbt run gets `--no-send-anonymous-usage-stats`; Preview's `dbt show` also
+gets `--no-populate-cache --no-write-json` (`BASE_FLAGS` / `SHOW_FLAGS` in `dbtArgs.ts`). On the
+user's project a model preview went 21 s → 11 s. What is left (~3–4 s Python/dbt import, ~4 s
+partial-parse load + graph, ~2 s ClickHouse connect) is per-process cost, so only option (b) — a
+warm dbt process holding a parsed manifest via `dbtRunner` — can cut further. That is a new
+subsystem and needs its own spec; do not start it without agreeing it first.
 
 ## Stack
 

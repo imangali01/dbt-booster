@@ -36,3 +36,35 @@ export function describeArgs(args: string[], maxArgLength: number = DESCRIBE_ARG
     })
     .join(' ');
 }
+
+/**
+ * Global flags for every dbt run the extension starts: dbt's anonymous usage
+ * tracking costs a network round trip at the end of each command (~2 s,
+ * measured), and this extension promises no telemetry anyway.
+ */
+export const BASE_FLAGS = ['--no-send-anonymous-usage-stats'];
+
+/**
+ * Extra global flags for Preview's `dbt show`, which only needs to run one
+ * SELECT. Measured on a 172-model ClickHouse project (ticket 24): 21 s → 11 s.
+ * - `--no-populate-cache` skips listing every schema up front (one query per
+ *   schema, ~6 s there); a macro that asks about a relation still gets its
+ *   answer, dbt just looks that one schema up on demand.
+ * - `--no-write-json` skips rewriting `target/manifest.json` and
+ *   `run_results.json`, which a preview has no reason to touch — and which
+ *   the manifest watcher would otherwise re-read mid-write.
+ */
+export const SHOW_FLAGS = [...BASE_FLAGS, '--no-populate-cache', '--no-write-json'];
+
+/**
+ * The full argument list for a Preview: `selector` is `['--select', model]` or
+ * `['--inline', sql]`.
+ */
+export function showArgs(selector: string[], limit: number): string[] {
+  return [...SHOW_FLAGS, 'show', ...selector, '--limit', String(limit), '--output', 'json'];
+}
+
+/** A terminal command (run/test/build/parse) with the {@link BASE_FLAGS} in front. */
+export function terminalArgs(args: string[]): string[] {
+  return [...BASE_FLAGS, ...args];
+}
