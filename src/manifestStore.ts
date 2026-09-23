@@ -6,6 +6,7 @@ import {
   docsTargetForModel,
   normaliseManifest,
   resolveNodeIdForFile,
+  sqlFilesForModel,
   type DbtManifest,
   type LineageExpansion,
   type LineageGraph,
@@ -117,6 +118,18 @@ export class ManifestStore implements vscode.Disposable {
       return undefined;
     }
     return path.join(this.projectRoot, node.original_file_path);
+  }
+
+  /** Absolute paths of a model's source `.sql` and its compiled SQL, for the preview panel. */
+  sqlFilesForModel(modelName: string): { source: string; compiled?: string } | undefined {
+    const files = this.manifest ? sqlFilesForModel(this.manifest, modelName) : undefined;
+    if (!files || !this.projectRoot) {
+      return undefined;
+    }
+    return {
+      source: path.join(this.projectRoot, files.sourceRelPath),
+      compiled: files.compiledRelPath ? path.join(this.projectRoot, files.compiledRelPath) : undefined,
+    };
   }
 
   /** Where a model's schema.yml doc block lives (or should be created), as an absolute path. */

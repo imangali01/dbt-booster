@@ -8,6 +8,7 @@ import {
   normaliseManifest,
   resolveNodeIdForFile,
   resourceCounts,
+  sqlFilesForModel,
   testsForModel,
   type DbtManifest,
   type ManifestNode,
@@ -336,5 +337,47 @@ describe('directParents / directChildren', () => {
       depends_on: { nodes: ['model.p.orders'] },
     });
     expect(directChildren(withTest, 'model.p.orders')).toEqual([]);
+  });
+});
+
+describe('sqlFilesForModel', () => {
+  it('gives the source path and the compiled path under target/compiled/<package>', () => {
+    const m: DbtManifest = {
+      nodes: {
+        'model.p.orders': model('orders', [], {
+          original_file_path: 'models/marts/orders.sql',
+          package_name: 'jaffle',
+        }),
+      },
+      sources: {},
+    };
+    expect(sqlFilesForModel(m, 'orders')).toEqual({
+      sourceRelPath: 'models/marts/orders.sql',
+      compiledRelPath: 'target/compiled/jaffle/models/marts/orders.sql',
+    });
+  });
+
+  it('omits the compiled path when the package is unknown', () => {
+    const m: DbtManifest = {
+      nodes: { 'model.p.orders': model('orders', [], { original_file_path: 'models/orders.sql' }) },
+      sources: {},
+    };
+    expect(sqlFilesForModel(m, 'orders')).toEqual({ sourceRelPath: 'models/orders.sql' });
+  });
+
+  it('ignores non-model nodes and unknown names', () => {
+    const m: DbtManifest = {
+      nodes: {
+        'seed.p.orders': {
+          unique_id: 'seed.p.orders',
+          name: 'orders',
+          resource_type: 'seed',
+          original_file_path: 'seeds/orders.csv',
+        },
+      },
+      sources: {},
+    };
+    expect(sqlFilesForModel(m, 'orders')).toBeUndefined();
+    expect(sqlFilesForModel(m, 'missing')).toBeUndefined();
   });
 });

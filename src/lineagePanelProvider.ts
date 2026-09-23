@@ -105,7 +105,7 @@ export class LineagePanelProvider implements vscode.WebviewViewProvider, vscode.
       void vscode.window.showErrorMessage('dbt booster: that node is not a runnable model.');
       return;
     }
-    performModelAction(action, modelName, projectRoot);
+    performModelAction(action, modelName, projectRoot, this.store);
   }
 
   private resetView(): void {

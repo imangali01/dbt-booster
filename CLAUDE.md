@@ -30,14 +30,16 @@ These were settled with the user during a grilling session. Honour them.
 - **dbt resolves its own `profiles.yml`.** Never pass `--profiles-dir` or `--target`. No `.env`
   loading, no environment shims.
 - **One user setting only: `dbtBooster.dbtPath`** (default `dbt`). Lineage depth (2 up / 2 down)
-  is a hardcoded constant. Preview's row limit is **not** hardcoded any more (ticket 12, same
-  pattern as ticket 10's exception): Preview prompts for it every run, defaulting to 20
-  (`DEFAULT_PREVIEW_LIMIT` in `dbtShow.ts`).
+  is a hardcoded constant. Preview never prompts for a row limit (ticket 23 reversed ticket 12's
+  prompt): it starts at `DEFAULT_PREVIEW_LIMIT` = 20 (`dbtShow.ts`) and the panel's "+" control
+  re-runs `dbt show` with a bigger limit (dbt has no offset).
+- **Preview panel** (ticket 23) shows the SQL that ran (compiled if this run refreshed
+  `target/compiled/…`, else the model source; the selection for inline previews), per-column
+  filter boxes, and the "+ N more rows" control.
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
-  Command Palette — no new title-bar button, no keybinding. It asks for a row limit exactly like
-  the Preview button does. Since ticket 22 the title-bar **Preview Data** button also previews
+  Command Palette — no new title-bar button, no keybinding. Since ticket 22 the title-bar **Preview Data** button also previews
   the selection when there is a non-blank one, and the whole model otherwise; the graph node
   context menu's Preview always previews the model.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
@@ -57,7 +59,7 @@ src/
   manifest.ts             PURE  buildLineageSubgraph (depth-limited BFS + "＋" expansion,
                                 cycle-safe, carries config.docs.node_color through),
                                 resolveNodeIdForFile (original_file_path → stem),
-                                countModels, resourceCounts, normaliseManifest, all the Lineage*
+                                countModels, resourceCounts, normaliseManifest, sqlFilesForModel, all the Lineage*
                                 types, plus one-hop testsForModel / directParents /
                                 directChildren for the Activity Bar's model-context views
   manifestStore.ts        GLUE  ManifestStore — load target/manifest.json, RelativePattern
@@ -105,6 +107,8 @@ src/
                                 Selected SQL", the one action that needs no manifest lookup;
                                 previewActive() — the Preview Data button: selection if any,
                                 else the whole model (ticket 22)
+  previewFilter.ts        PURE  matchesFilters (embedded into the preview webview via toString —
+                                keep it self-contained), nextPreviewLimit, allRowsLoaded
   dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) / runDbtShowInline(sql, cwd, limit)
                                 — arg-building over dbtProcess for `dbt show --output json`, for
                                 Preview; DEFAULT_PREVIEW_LIMIT = 20
@@ -114,9 +118,10 @@ src/
   dbtShowParser.ts        PURE  parseDbtShowOutput() — extracts columns/rows from `dbt show` JSON
                                 output, tolerant of surrounding plain or structured-JSON log
                                 lines; numericColumns() — which columns to right-align
-  previewPanel.ts         GLUE  showPreview(model, root) / showInlinePreview(sql, label, root) —
-                                editor-area WebviewPanel, re-created per run, self-contained
-                                HTML/CSS/JS sortable table (no React needed)
+  previewPanel.ts         GLUE  showPreview(model, root, sqlFiles) / showInlinePreview(sql, label,
+                                root) — editor-area WebviewPanel, re-created per preview; static
+                                HTML shell fed by postMessage: SQL block, sortable + filterable
+                                table, "+ N more rows" re-run (no React needed)
   lineagePanelProvider.ts GLUE  LineagePanelProvider — WebviewViewProvider for the panel;
                                 resolves the centre from the active editor, posts graph/empty,
                                 handles openFile / recentre / expand / nodeAction (run/test/build/
@@ -210,6 +215,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 20 | Preview Data for a selected SQL fragment (`dbt show --inline`) | ✅ done (v0.0.25) |
 | 21 | Measure where dbt time actually goes (timings + diagnostics command) | ✅ done (v0.0.26) |
 | 22 | Preview Data button previews the selection when there is one | ✅ done (v0.0.27) |
+| 23 | Preview panel — shown SQL, "load more" rows, column filters; no limit prompt | ✅ done (v0.0.28) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
