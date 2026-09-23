@@ -1,46 +1,95 @@
 # dbt booster
 
-A lean VS Code extension for working with [dbt](https://www.getdbt.com/) projects:
-
-- an interactive **lineage graph** for the model you are editing, and
-- one-click **Run / Test / Build / Preview** buttons for that model.
+A lean VS Code extension for working with [dbt](https://www.getdbt.com/) projects: a lineage
+graph for the model you are editing, one-click **Run / Test / Build / Preview**, a data preview
+with Excel-style filters, and a `schema.yml` docs editor.
 
 No AI assistant, no telemetry, no cloud account. It reads your project's
-`target/manifest.json` and shells out to your own `dbt` CLI, letting dbt resolve
-`profiles.yml` the way it normally does.
+`target/manifest.json` and runs your own `dbt` CLI, which resolves `profiles.yml` the way it
+normally does.
 
-> Status: early development. Working so far: dbt project discovery, an in-memory
-> `manifest.json` model, and the **Lineage** panel (bottom Panel area) — open a
-> model `.sql` file to see its dependency graph; click a node to open it,
-> shift-click to re-centre, use Refresh to re-run `dbt parse`. The Run / Test /
-> Build / Preview buttons are next.
+## Lineage graph
+
+Open a model and the **Lineage** panel (bottom Panel area, next to Terminal) shows two levels up
+and two levels down. Click a node to open its file, Shift-click to re-centre on it, and use the
+**＋** handles to reveal one more level. **Refresh** re-runs `dbt parse`.
+
+![Lineage graph around the orders model](media/screenshots/lineage.png)
+
+Right-click a model node to run dbt on it without opening the file.
+
+![Right-click menu on a lineage node: Run, Test, Build, Preview](media/screenshots/lineage-actions.png)
+
+## Run, Test, Build, Preview
+
+The editor title bar gets **Run**, **Test**, **Build** and **Preview Data** buttons for the
+model you have open. Run and Build also offer the model with its upstream (`+model`),
+downstream (`model+`) or both (`+model+`).
+
+Run / Test / Build go to one reused terminal named `dbt-booster`. While dbt works, a progress
+notification shows the current stage, the elapsed seconds, and how many models or tests are
+done out of how many.
+
+## Data preview
+
+**Preview Data** runs `dbt show` for the model and opens the rows in a table. Select a piece of
+SQL first, or right-click it and choose **▦ Preview Selected SQL**, to preview just that fragment
+(`dbt show --inline`; `{{ ref() }}` still resolves).
+
+- The collapsible **SQL** block shows the compiled SQL dbt actually ran.
+- **▾** in a column header opens a filter like a spreadsheet's: every value in the column with
+  its row count, search, select-all, sort.
+- **+** at the bottom loads more rows (20 by default, or any number you type).
+
+![Preview panel with compiled SQL and 20 rows](media/screenshots/preview.png)
+
+![Column filter listing each status with its row count](media/screenshots/preview-filter.png)
+
+While dbt starts up, the panel shows which stage it is in and how long each one took:
+
+![Preview progress: dbt stages with their seconds](media/screenshots/preview-progress.png)
+
+## Docs editor
+
+The **Docs** panel edits the open model's entry in `schema.yml`: description, tags, columns and
+per-column tests (`not_null`, `unique`, `relationships`, `accepted_values` or a custom test).
+Only that model's block is rewritten; the rest of the file is left as it was.
+
+![Docs editor for the orders model](media/screenshots/docs.png)
+
+## Sidebar
+
+The **dbt booster** view in the Activity Bar shows the project (name, resource counts, Python
+environment) and, for the open model, its tests, parents, children and documented columns.
+
+## Setup
+
+- A dbt project (a folder with `dbt_project.yml`) in the workspace.
+- dbt-core 1.5 or newer (1.5 is needed for previewing a selection).
+- One setting: **`dbtBooster.dbtPath`**, the dbt command to run (default `dbt`). If dbt lives in
+  a conda env or a virtualenv, click the Python environment in the status bar and pick it; the
+  extension writes the path for you. `uv run dbt` style commands work too.
+
+If `target/manifest.json` is missing, the extension offers to run `dbt parse`.
+
+**Diagnose dbt Performance** (Command Palette) times dbt's startup, parse and a trivial query,
+and prints where the time goes to the **dbt booster** output channel.
 
 ## Running from source
 
-Requirements: Node.js 18+ and a local `dbt` on your `PATH` (or set
-`dbtBooster.dbtPath`).
+Requirements: Node.js 18+.
 
 ```sh
 npm install
-npm run build       # produces out/extension.js and out/webview.js
+npm run build       # out/extension.js and out/webview.js
 npm test            # vitest
+npm run package     # dbt-booster-<version>.vsix
 ```
 
-Then press **F5** in VS Code. This launches an Extension Development Host opened
-on the bundled `sample/jaffle` dbt project; the extension activates and writes an
-activation line to the **dbt booster** output channel (View → Output → "dbt
-booster").
-
-### Scripts
-
-| Script            | Purpose                                             |
-| ----------------- | -------------------------------------------------- |
-| `npm run build`   | One-off dual esbuild (extension + webview)         |
-| `npm run watch`   | Rebuild on change                                  |
-| `npm run typecheck` | `tsc --noEmit`                                   |
-| `npm test`        | Run the vitest suite                               |
+Press **F5** in VS Code to open an Extension Development Host on the bundled `sample/jaffle`
+project.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). This is a clean-room implementation; no code is
-taken from other dbt extensions.
+MIT — see [LICENSE](./LICENSE). This is a clean-room implementation; no code is taken from
+other dbt extensions.

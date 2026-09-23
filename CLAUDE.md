@@ -178,6 +178,9 @@ test/                     vitest — one file per pure module
 sample/jaffle/            minimal dbt project + hand-written target/manifest.json fixture
                           (customers ← orders) so features work without a real dbt run
 media/dbt-logo.png        extension marketplace icon + Lineage panel container icon
+media/screenshots/        README screenshots — the real webviews rendered in headless Edge with
+                          Dark Modern theme vars and jaffle-shop data; regenerate with
+                          .scratch/dbt-booster/shots.mjs (ticket 30)
 esbuild.mjs               dual build: out/extension.js (node/cjs) + out/webview.js+css (browser/esm)
 .scratch/dbt-booster/issues/   the 8 tickets; each carries a Status + Notes section
 ```
@@ -188,7 +191,11 @@ coverage; VS Code / React glue is thin and untested. Keep it that way.
 ## Build & test
 
 Commands (`npm run …`): `build`, `watch`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`),
-`package` (`vsce package --no-dependencies` → `dbt-booster-<version>.vsix`).
+`package` (`vsce package --no-dependencies --no-rewrite-relative-links` →
+`dbt-booster-<version>.vsix`). `--no-rewrite-relative-links` keeps README's screenshot links
+relative so they render from inside the installed VSIX; before a Marketplace publish they must
+become https URLs (the Marketplace does not serve files from the package, and the `repository`
+URL is a placeholder with no remote).
 
 **This machine:** Node 24 / npm 11 are installed at `C:\Program Files\nodejs\` but the shell
 PATH can be stale. If `node` is "not recognized", prefix commands in PowerShell with
@@ -242,6 +249,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 27 | No false "manifest.json not found" prompts (debounce + retry mid-write reads) | ✅ done (v0.0.35) |
 | 28 | Visible text progress bar in the Run/Test/Build notification | ✅ done (v0.0.36) |
 | 29 | "▦" marker on the right-click Preview Selected SQL item | ✅ done (v0.0.37) |
+| 30 | README rewrite + screenshots (media/screenshots), preview `[hidden]` fix | ✅ done (v0.0.38) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage

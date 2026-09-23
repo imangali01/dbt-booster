@@ -261,6 +261,8 @@ function render(title: string): string {
   details.sql { margin: 0 0 10px; border: 1px solid var(--vscode-panel-border, #454545); border-radius: 3px; }
   details.sql summary { cursor: pointer; padding: 4px 8px; font-size: 12px; user-select: none; background: var(--vscode-editorWidget-background, #252526); }
   details.sql pre { margin: 0; padding: 8px; max-height: 240px; overflow: auto; font-family: var(--vscode-editor-font-family, monospace); font-size: var(--vscode-editor-font-size, 12px); white-space: pre; }
+  /* Rules like .footer { display: flex } would otherwise override the hidden attribute. */
+  [hidden] { display: none !important; }
   .progress { margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--vscode-panel-border, #454545); border-radius: 3px; background: var(--vscode-editorWidget-background, #252526); font-size: 12px; }
   .progress .bar { height: 6px; border-radius: 3px; overflow: hidden; background: rgba(128, 128, 128, 0.25); }
   .progress .fill { height: 100%; width: 0; background: var(--vscode-progressBar-background, #0e70c0); transition: width 0.1s linear; }
