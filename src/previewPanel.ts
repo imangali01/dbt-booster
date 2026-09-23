@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
+import * as path from 'path';
 import { DEFAULT_PREVIEW_LIMIT, runDbtShow, runDbtShowInline } from './dbtShow';
 import { numericColumns, parseDbtShowOutput } from './dbtShowParser';
 import { allRowsLoaded, matchesFilters, nextPreviewLimit } from './previewFilter';
@@ -56,14 +57,59 @@ export function showPreview(
 /**
  * The same panel, for an editor selection rather than a whole model: `sql` is
  * run through `dbt show --inline` and `label` (a short one-line summary of the
- * selection) titles the panel.
+ * selection) titles the panel. The SQL shown is dbt's compiled version of the
+ * selection, falling back to the selection itself if dbt did not write one.
  */
 export function showInlinePreview(sql: string, label: string, projectRoot: string): Promise<void> {
   return showIn({
     title: label,
     run: (limit) => runDbtShowInline(sql, projectRoot, limit),
-    sql: async () => ({ text: sql, kind: 'selection' }),
+    sql: async (startedAt) =>
+      (await readInlineCompiledSql(projectRoot, startedAt)) ?? { text: sql, kind: 'selection' },
   });
+}
+
+/**
+ * Where dbt (1.8) writes a compiled `--inline` query, under
+ * `target/compiled/<root project>/`: the inline node's "file" is the pseudo
+ * path `from remote system.sql`, and its name is `inline_query`.
+ */
+const INLINE_COMPILED_PARTS = ['from remote system.sql', 'sql', 'inline_query'];
+
+/**
+ * The compiled SQL of the inline query that just ran, with `ref()` / `source()`
+ * already resolved to relation names. Every package dir under
+ * `target/compiled` is tried; only a file written by this run counts.
+ */
+async function readInlineCompiledSql(
+  projectRoot: string,
+  startedAt: number,
+): Promise<ShownSql | undefined> {
+  const compiledRoot = path.join(projectRoot, 'target', 'compiled');
+  let packages: string[];
+  try {
+    packages = await fs.readdir(compiledRoot);
+  } catch {
+    return undefined;
+  }
+  for (const pkg of packages) {
+    const text = await readIfFresh(path.join(compiledRoot, pkg, ...INLINE_COMPILED_PARTS), startedAt);
+    if (text !== undefined) {
+      return { text, kind: 'compiled' };
+    }
+  }
+  return undefined;
+}
+
+/** `file`'s text if dbt wrote it during a run that started at `startedAt`, else undefined. */
+async function readIfFresh(file: string, startedAt: number): Promise<string | undefined> {
+  try {
+    const stat = await fs.stat(file);
+    // A little slack for filesystem timestamp granularity.
+    return stat.mtimeMs >= startedAt - 2000 ? await fs.readFile(file, 'utf8') : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -78,16 +124,9 @@ async function readModelSql(
   if (!files) {
     return undefined;
   }
-  if (files.compiled) {
-    try {
-      const stat = await fs.stat(files.compiled);
-      // A little slack for filesystem timestamp granularity.
-      if (stat.mtimeMs >= startedAt - 2000) {
-        return { text: await fs.readFile(files.compiled, 'utf8'), kind: 'compiled' };
-      }
-    } catch {
-      // not compiled yet — fall through to the source
-    }
+  const compiled = files.compiled ? await readIfFresh(files.compiled, startedAt) : undefined;
+  if (compiled !== undefined) {
+    return { text: compiled, kind: 'compiled' };
   }
   try {
     return { text: await fs.readFile(files.source, 'utf8'), kind: 'source' };

@@ -34,7 +34,8 @@ These were settled with the user during a grilling session. Honour them.
   prompt): it starts at `DEFAULT_PREVIEW_LIMIT` = 20 (`dbtShow.ts`) and the panel's "+" control
   re-runs `dbt show` with a bigger limit (dbt has no offset).
 - **Preview panel** (ticket 23) shows the SQL that ran (compiled if this run refreshed
-  `target/compiled/…`, else the model source; the selection for inline previews), per-column
+  `target/compiled/…`, else the model source; for inline previews dbt's compiled
+  `…/from remote system.sql/sql/inline_query`, else the raw selection — v0.0.29), per-column
   filter boxes, and the "+ N more rows" control.
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
