@@ -15,8 +15,8 @@ describe('splitCommand', () => {
   });
 
   it('keeps an absolute path as the program', () => {
-    expect(splitCommand('C:\envs\dwh\Scripts\dbt.exe')).toEqual([
-      'C:\envs\dwh\Scripts\dbt.exe',
+    expect(splitCommand('C:\envs\jaffle\Scripts\dbt.exe')).toEqual([
+      'C:\envs\jaffle\Scripts\dbt.exe',
       [],
     ]);
   });

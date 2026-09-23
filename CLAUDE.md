@@ -191,11 +191,11 @@ coverage; VS Code / React glue is thin and untested. Keep it that way.
 ## Build & test
 
 Commands (`npm run …`): `build`, `watch`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`),
-`package` (`vsce package --no-dependencies --no-rewrite-relative-links` →
-`dbt-booster-<version>.vsix`). `--no-rewrite-relative-links` keeps README's screenshot links
-relative so they render from inside the installed VSIX; before a Marketplace publish they must
-become https URLs (the Marketplace does not serve files from the package, and the `repository`
-URL is a placeholder with no remote).
+`package` (`vsce package --no-dependencies` → `dbt-booster-<version>.vsix`). vsce rewrites
+README's relative image links to `https://github.com/imangali01/dbt-booster/raw/HEAD/…`: VS Code's
+extension page only shows `https:` images (its markdown sanitizer drops relative paths and
+`data:` — checked in VS Code 1.137), so screenshots render only once they are pushed to the public
+repo. The remote `origin` is that public GitHub repo (ticket 31); push only when the user asks.
 
 **This machine:** Node 24 / npm 11 are installed at `C:\Program Files\nodejs\` but the shell
 PATH can be stale. If `node` is "not recognized", prefix commands in PowerShell with
@@ -214,7 +214,9 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
    `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
    Commit messages go through a file (`git commit -F`) — inline `-m` with quotes breaks in
    Windows PowerShell.
-6. Send the `.vsix` to the user. Do **not** push (there is no remote).
+6. Send the `.vsix` to the user. Do **not** push unless the user asks (remote: public GitHub).
+   Never put names, data or paths from the user's work dbt project into tracked files — the
+   repo is public; tests use neutral jaffle-shop style names.
 
 ## Status (as of ticket 09)
 
@@ -250,6 +252,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 28 | Visible text progress bar in the Run/Test/Build notification | ✅ done (v0.0.36) |
 | 29 | "▦" marker on the right-click Preview Selected SQL item | ✅ done (v0.0.37) |
 | 30 | README rewrite + screenshots (media/screenshots), preview `[hidden]` fix | ✅ done (v0.0.38) |
+| 31 | Public GitHub repo; README images via https; work-project names scrubbed from tests | ✅ done (v0.0.39) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage

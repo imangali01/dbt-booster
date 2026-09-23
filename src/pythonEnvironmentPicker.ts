@@ -158,7 +158,7 @@ export async function pickPythonEnvironment(workspaceRoots: readonly string[]): 
     const entered = await vscode.window.showInputBox({
       title: 'dbt executable path',
       value: current,
-      placeHolder: 'e.g. C:\\Users\\you\\miniconda3\\envs\\skai\\Scripts\\dbt.exe',
+      placeHolder: 'e.g. C:\\Users\\you\\miniconda3\\envs\\dbt-env\\Scripts\\dbt.exe',
     });
     if (entered) {
       await config.update('dbtPath', entered, target);

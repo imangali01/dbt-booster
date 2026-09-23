@@ -7,19 +7,19 @@ import {
 
 describe('dbtExecutableInEnv', () => {
   it('builds the Windows Scripts path', () => {
-    expect(dbtExecutableInEnv('C:\\envs\\skai', 'win32')).toBe('C:\\envs\\skai\\Scripts\\dbt.exe');
+    expect(dbtExecutableInEnv('C:\\envs\\dbt-env', 'win32')).toBe('C:\\envs\\dbt-env\\Scripts\\dbt.exe');
   });
 
   it('builds the POSIX bin path', () => {
-    expect(dbtExecutableInEnv('/home/x/envs/skai', 'linux')).toBe('/home/x/envs/skai/bin/dbt');
+    expect(dbtExecutableInEnv('/home/x/envs/dbt-env', 'linux')).toBe('/home/x/envs/dbt-env/bin/dbt');
   });
 });
 
 describe('parseCondaEnvironmentsFile', () => {
   it('extracts non-empty, non-comment lines', () => {
-    const content = 'C:\\Users\\x\\miniconda3\\envs\\skai\n# a comment\n\nC:\\Users\\x\\miniconda3\n';
+    const content = 'C:\\Users\\x\\miniconda3\\envs\\dbt-env\n# a comment\n\nC:\\Users\\x\\miniconda3\n';
     expect(parseCondaEnvironmentsFile(content)).toEqual([
-      'C:\\Users\\x\\miniconda3\\envs\\skai',
+      'C:\\Users\\x\\miniconda3\\envs\\dbt-env',
       'C:\\Users\\x\\miniconda3',
     ]);
   });
@@ -37,8 +37,8 @@ describe('describeDbtPath', () => {
   });
 
   it('extracts the conda env name from an envs/<name>/... path', () => {
-    expect(describeDbtPath('C:\\Users\\x\\miniconda3\\envs\\skai\\Scripts\\dbt.exe')).toBe('skai');
-    expect(describeDbtPath('/home/x/miniconda3/envs/skai/bin/dbt')).toBe('skai');
+    expect(describeDbtPath('C:\\Users\\x\\miniconda3\\envs\\dbt-env\\Scripts\\dbt.exe')).toBe('dbt-env');
+    expect(describeDbtPath('/home/x/miniconda3/envs/dbt-env/bin/dbt')).toBe('dbt-env');
   });
 
   it('falls back to the env-root folder name for a plain venv', () => {

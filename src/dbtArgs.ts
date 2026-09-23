@@ -46,7 +46,7 @@ export const BASE_FLAGS = ['--no-send-anonymous-usage-stats'];
 
 /**
  * Extra global flags for Preview's `dbt show`, which only needs to run one
- * SELECT. Measured on a 172-model ClickHouse project (ticket 24): 21 s → 11 s.
+ * SELECT. Measured on a real ~170-model ClickHouse project (ticket 24): 21 s → 11 s.
  * - `--no-populate-cache` skips listing every schema up front (one query per
  *   schema, ~6 s there); a macro that asks about a relation still gets its
  *   answer, dbt just looks that one schema up on demand.

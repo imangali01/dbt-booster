@@ -18,11 +18,11 @@ const RUN_LOG = [
   '07:10:02  Registered adapter: clickhouse=1.8.9',
   '07:10:05  Found 172 models, 871 data tests, 111 sources, 474 macros',
   "07:10:05  Concurrency: 1 threads (target='test')",
-  '07:10:08  1 of 3 START sql table model dm_kmg.a ........ [RUN]',
-  '07:10:09  1 of 3 OK created sql table model dm_kmg.a ... [OK in 1.10s]',
-  '07:10:09  2 of 3 START sql view model dm_kmg.b ......... [RUN]',
-  '07:10:10  2 of 3 ERROR creating sql view model dm_kmg.b  [ERROR in 0.40s]',
-  '07:10:10  3 of 3 SKIP relation dm_kmg.c ................ [SKIP]',
+  '07:10:08  1 of 3 START sql table model analytics.a ........ [RUN]',
+  '07:10:09  1 of 3 OK created sql table model analytics.a ... [OK in 1.10s]',
+  '07:10:09  2 of 3 START sql view model analytics.b ......... [RUN]',
+  '07:10:10  2 of 3 ERROR creating sql view model analytics.b  [ERROR in 0.40s]',
+  '07:10:10  3 of 3 SKIP relation analytics.c ................ [SKIP]',
 ];
 
 describe('stripAnsi', () => {

@@ -275,10 +275,10 @@ describe('applyModelDoc', () => {
   it('writes tags in flow style — tags: [a, b] — not one per line', () => {
     const out = applyModelDoc('', 'orders', {
       description: '',
-      tags: ['samruk_energo', 'kegoc'],
+      tags: ['finance', 'daily'],
       columns: [],
     });
-    expect(out).toContain('tags: [samruk_energo, kegoc]');
+    expect(out).toContain('tags: [finance, daily]');
   });
 
   it('migrates a legacy top-level tags: to config.tags on save', () => {

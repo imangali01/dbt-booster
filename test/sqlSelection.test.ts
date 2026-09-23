@@ -34,12 +34,12 @@ describe('prepareInlineSql', () => {
   });
 
   it('keeps the ref() jinja untouched — dbt compiles it', () => {
-    const selection = "select distinct company\nfrom {{ ref('dds_kmg__dim_companies') }}";
+    const selection = "select distinct customer_id\nfrom {{ ref('stg_customers') }}";
     expect(prepareInlineSql(selection)?.sql).toBe(selection);
   });
 
   it('labels the selection with its first meaningful line', () => {
-    const selection = 'select distinct\n    company_dim_key,\n    company\nfrom x';
+    const selection = 'select distinct\n    customer_id,\n    first_name\nfrom x';
     expect(prepareInlineSql(selection)?.label).toBe('select distinct');
   });
 
