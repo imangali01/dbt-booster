@@ -8,6 +8,7 @@ import {
   describeRunProgress,
   runPercent,
   stripAnsi,
+  textBar,
 } from './runProgress';
 
 const TERMINAL_NAME = 'dbt-booster';
@@ -75,7 +76,7 @@ async function runWithProgress(term: vscode.Terminal, line: string, title: strin
         const now = Date.now();
         const pct = runPercent(state);
         progress.report({
-          message: describeRunProgress(state, now - stageStarted, now - started),
+          message: `${textBar(pct)}  ${describeRunProgress(state, now - stageStarted, now - started)}`,
           increment: pct > reported ? pct - reported : undefined,
         });
         reported = Math.max(reported, pct);

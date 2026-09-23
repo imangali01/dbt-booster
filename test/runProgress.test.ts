@@ -6,6 +6,7 @@ import {
   describeRunProgress,
   runPercent,
   stripAnsi,
+  textBar,
   type RunProgress,
 } from '../src/runProgress';
 
@@ -97,5 +98,19 @@ describe('describeRunProgress', () => {
     expect(describeRunProgress(fold(RUN_LOG), 0, 41200)).toBe(
       '5/5 Running 3/3 · 1 failed · total 41.2 s',
     );
+  });
+});
+
+describe('textBar', () => {
+  it('fills blocks in proportion and shows the percent', () => {
+    expect(textBar(0)).toBe('░░░░░░░░░░░░░░░░ 0%');
+    expect(textBar(50)).toBe('████████░░░░░░░░ 50%');
+    expect(textBar(100)).toBe('████████████████ 100%');
+  });
+
+  it('rounds the blocks, floors the percent, and clamps', () => {
+    expect(textBar(37.9, 10)).toBe('████░░░░░░ 37%');
+    expect(textBar(-5, 4)).toBe('░░░░ 0%');
+    expect(textBar(140, 4)).toBe('████ 100%');
   });
 });

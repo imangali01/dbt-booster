@@ -87,6 +87,17 @@ export function runPercent(state: RunProgress): number {
   return STARTUP + ((100 - STARTUP) * Math.min(state.done, state.total)) / state.total;
 }
 
+/**
+ * A text progress bar, e.g. "██████░░░░░░░░░░ 38%". VS Code's own notification
+ * bar is a thin line an extension cannot restyle, so the message carries a
+ * visible one too.
+ */
+export function textBar(percent: number, width = 16): string {
+  const pct = Math.max(0, Math.min(100, percent));
+  const filled = Math.round((pct / 100) * width);
+  return `${'█'.repeat(filled)}${'░'.repeat(width - filled)} ${Math.floor(pct)}%`;
+}
+
 /** One line for the progress notification, e.g. "5/5 Running 3/12 · 1 failed · total 4.2 s". */
 export function describeRunProgress(state: RunProgress, stageMs: number, totalMs: number): string {
   const secs = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
