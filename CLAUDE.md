@@ -68,8 +68,12 @@ src/
                                 types, plus one-hop testsForModel / directParents /
                                 directChildren for the Activity Bar's model-context views
   manifestStore.ts        GLUE  ManifestStore — load target/manifest.json, RelativePattern
-                                watcher, missing-manifest "Run dbt parse" prompt,
+                                watcher (debounced; failed reads retried, see manifestReload.ts),
+                                missing-manifest "Run dbt parse" prompt,
                                 resolveModelId / lineageAround / absolutePathForNode
+  manifestReload.ts       PURE  afterFailedManifestLoad — retry a failed manifest read (dbt caught
+                                mid-write) before believing it; prompt only if still missing
+                                (ticket 27)
   treeItems.ts            GLUE  InfoItem — the one flat tree-row type shared by every Activity
                                 Bar view below
   projectInfoProvider.ts  GLUE  ProjectInfoProvider — TreeDataProvider for the Activity Bar's
@@ -86,7 +90,8 @@ src/
                                 notification (stage, seconds, k/N nodes), then logs a per-stage
                                 timing line (ticket 26)
   runProgress.ts          PURE  RUN_STAGES, advanceRunProgress (line reducer), runPercent,
-                                describeRunProgress, stripAnsi — terminal run progress (ticket 26)
+                                describeRunProgress, stripAnsi, textBar — terminal run progress
+                                (tickets 26, 28)
   dbtLog.ts               GLUE  setDbtLog / dbtLog — the one output-channel sink for dbt
                                 invocations, in its own module so dbtTerminal and dbtProcess can
                                 both use it without an import cycle
@@ -232,6 +237,8 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 24 | Faster Preview — cheap dbt flags, picked from measurements | ✅ done (v0.0.32) |
 | 25 | Preview progress bar — live dbt stage + seconds | ✅ done (v0.0.33) |
 | 26 | Run/Test/Build/parse progress notification (via terminal shell integration) | ✅ done (v0.0.34) |
+| 27 | No false "manifest.json not found" prompts (debounce + retry mid-write reads) | ✅ done (v0.0.35) |
+| 28 | Visible text progress bar in the Run/Test/Build notification | ✅ done (v0.0.36) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage

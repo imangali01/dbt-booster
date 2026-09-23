@@ -12,6 +12,7 @@ import {
   type LineageGraph,
 } from './manifest';
 import { runDbt } from './dbtTerminal';
+import { MANIFEST_RELOAD_DEBOUNCE_MS, afterFailedManifestLoad } from './manifestReload';
 
 const CASE_INSENSITIVE = process.platform === 'win32';
 
@@ -25,6 +26,9 @@ export class ManifestStore implements vscode.Disposable {
   private projectRoot: string | undefined;
   private watcher: vscode.FileSystemWatcher | undefined;
   private parsePrompted = false;
+  private reloadTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Bumped by every load() and project switch, so stale retries give up. */
+  private loadGeneration = 0;
   private readonly _onDidChange = new vscode.EventEmitter<void>();
 
   /** Fires after every (re)load attempt, whether or not a manifest is now present. */
@@ -48,6 +52,8 @@ export class ManifestStore implements vscode.Disposable {
   async setProject(root: string | undefined): Promise<void> {
     this.projectRoot = root;
     this.parsePrompted = false;
+    this.loadGeneration++;
+    clearTimeout(this.reloadTimer);
     this.watcher?.dispose();
     this.watcher = undefined;
     this.manifest = undefined;
@@ -59,7 +65,11 @@ export class ManifestStore implements vscode.Disposable {
 
     const pattern = new vscode.RelativePattern(root, 'target/manifest.json');
     this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
-    const reload = (): void => void this.load();
+    // dbt rewrites the file in several steps; one debounced read per burst.
+    const reload = (): void => {
+      clearTimeout(this.reloadTimer);
+      this.reloadTimer = setTimeout(() => void this.load(), MANIFEST_RELOAD_DEBOUNCE_MS);
+    };
     this.watcher.onDidCreate(reload);
     this.watcher.onDidChange(reload);
     this.watcher.onDidDelete(reload);
@@ -67,22 +77,57 @@ export class ManifestStore implements vscode.Disposable {
     await this.load();
   }
 
-  /** Read and parse the manifest for the current project root. */
+  /**
+   * Read and parse the manifest for the current project root. A failed read is
+   * retried (see manifestReload.ts) with the previous manifest kept meanwhile,
+   * since it is usually dbt caught mid-write; a newer load() or project switch
+   * abandons the retries.
+   */
   async load(): Promise<void> {
     const root = this.projectRoot;
     if (!root) {
       return;
     }
+    clearTimeout(this.reloadTimer);
+    const generation = ++this.loadGeneration;
     const uri = vscode.Uri.joinPath(vscode.Uri.file(root), 'target', 'manifest.json');
-    try {
-      const bytes = await vscode.workspace.fs.readFile(uri);
-      this.manifest = normaliseManifest(JSON.parse(Buffer.from(bytes).toString('utf8')));
-      this.parsePrompted = false;
-      this.log(`manifest loaded for ${root}: ${this.modelCount} model(s)`);
-    } catch (err) {
-      this.manifest = undefined;
-      this.log(`manifest unavailable for ${root}: ${(err as Error).message}`);
-      this.promptParse(root);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const bytes = await vscode.workspace.fs.readFile(uri);
+        const manifest = normaliseManifest(JSON.parse(Buffer.from(bytes).toString('utf8')));
+        if (generation !== this.loadGeneration) {
+          return;
+        }
+        this.manifest = manifest;
+        this.parsePrompted = false;
+        this.log(`manifest loaded for ${root}: ${this.modelCount} model(s)`);
+        break;
+      } catch (err) {
+        const error =
+          err instanceof vscode.FileSystemError && err.code === 'FileNotFound' ? 'missing' : 'invalid';
+        const decision = afterFailedManifestLoad(error, attempt, this.manifest !== undefined);
+        if (decision.action === 'retry') {
+          await new Promise((resolve) => setTimeout(resolve, decision.delayMs));
+          if (generation !== this.loadGeneration) {
+            return;
+          }
+          continue;
+        }
+        if (generation !== this.loadGeneration) {
+          return;
+        }
+        if (!decision.keepPrevious) {
+          this.manifest = undefined;
+        }
+        this.log(
+          `manifest unavailable for ${root} after ${attempt + 1} tries: ${(err as Error).message}` +
+            (decision.keepPrevious ? ' (keeping the last good one)' : ''),
+        );
+        if (decision.prompt) {
+          this.promptParse(root);
+        }
+        break;
+      }
     }
     this._onDidChange.fire();
   }
@@ -181,6 +226,8 @@ export class ManifestStore implements vscode.Disposable {
   }
 
   dispose(): void {
+    clearTimeout(this.reloadTimer);
+    this.loadGeneration++;
     this.watcher?.dispose();
     this._onDidChange.dispose();
   }
