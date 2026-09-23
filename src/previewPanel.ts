@@ -9,8 +9,15 @@ import {
   nextPreviewLimit,
   passesValueFilters,
 } from './previewFilter';
+import { PREVIEW_STAGES, stageDurations, stageFromOutput } from './previewProgress';
 
 let panel: vscode.WebviewPanel | undefined;
+
+/**
+ * How long each stage took on the last successful preview this session — the
+ * progress bar's estimate for the next run. Starts from the stages' defaults.
+ */
+let expectedStageMs: number[] = PREVIEW_STAGES.map((stage) => stage.defaultSeconds * 1000);
 
 /** The SQL shown above the rows, and which kind of text it is. */
 interface ShownSql {
@@ -21,14 +28,16 @@ interface ShownSql {
 /** What a preview panel runs, re-run with a bigger limit on every "load more". */
 interface PreviewSource {
   title: string;
-  run(limit: number): Promise<string>;
+  /** Run dbt; `onOutput` streams its output as it arrives. */
+  run(limit: number, onOutput: (text: string) => void): Promise<string>;
   /** The SQL to show, looked up after a run that started at `startedAt` (epoch ms). */
   sql(startedAt: number): Promise<ShownSql | undefined>;
 }
 
 /** Messages the extension posts to the preview webview. */
 type PreviewUpdate =
-  | { type: 'loading'; limit: number }
+  | { type: 'loading'; limit: number; stages: string[]; expectedMs: number[] }
+  | { type: 'stage'; index: number }
   | {
       type: 'result';
       limit: number;
@@ -39,6 +48,9 @@ type PreviewUpdate =
       numeric: boolean[];
       rows: (string | null)[][];
       complete: boolean;
+      /** How long each stage took, ms. */
+      stageMs: number[];
+      totalMs: number;
     };
 
 /**
@@ -54,7 +66,7 @@ export function showPreview(
 ): Promise<void> {
   return showIn({
     title: modelName,
-    run: (limit) => runDbtShow(modelName, projectRoot, limit),
+    run: (limit, onOutput) => runDbtShow(modelName, projectRoot, limit, onOutput),
     sql: (startedAt) => readModelSql(sqlFiles, startedAt),
   });
 }
@@ -68,7 +80,7 @@ export function showPreview(
 export function showInlinePreview(sql: string, label: string, projectRoot: string): Promise<void> {
   return showIn({
     title: label,
-    run: (limit) => runDbtShowInline(sql, projectRoot, limit),
+    run: (limit, onOutput) => runDbtShowInline(sql, projectRoot, limit, onOutput),
     sql: async (startedAt) =>
       (await readInlineCompiledSql(projectRoot, startedAt)) ?? { text: sql, kind: 'selection' },
   });
@@ -163,15 +175,37 @@ async function showIn(source: PreviewSource): Promise<void> {
 
   const load = async () => {
     running = true;
-    post({ type: 'loading', limit });
+    post({
+      type: 'loading',
+      limit,
+      stages: PREVIEW_STAGES.map((stage) => stage.label),
+      expectedMs: expectedStageMs,
+    });
     const startedAt = Date.now();
-    const raw = await source.run(limit);
+    // When each stage began; a stage dbt skipped past stays undefined.
+    const stageStartedAt: (number | undefined)[] = [startedAt];
+    let stage = 0;
+    let output = '';
+    const raw = await source.run(limit, (text) => {
+      output += text;
+      const next = stageFromOutput(output, stage);
+      if (next !== stage) {
+        stage = next;
+        stageStartedAt[next] = Date.now();
+        post({ type: 'stage', index: next });
+      }
+    });
+    const endedAt = Date.now();
     const sql = await source.sql(startedAt);
     running = false;
     if (panel !== current) {
       return; // superseded by a newer preview or closed while dbt was running
     }
     const result = parseDbtShowOutput(raw);
+    const stageMs = stageDurations(stageStartedAt, endedAt);
+    if (result.ok && stage === PREVIEW_STAGES.length - 1) {
+      expectedStageMs = stageMs;
+    }
     post({
       type: 'result',
       limit,
@@ -182,6 +216,8 @@ async function showIn(source: PreviewSource): Promise<void> {
       numeric: numericColumns(result),
       rows: result.rows.map((row) => row.map(formatCell)),
       complete: allRowsLoaded(result.rows.length, limit),
+      stageMs,
+      totalMs: endedAt - startedAt,
     });
   };
 
@@ -225,6 +261,18 @@ function render(title: string): string {
   details.sql { margin: 0 0 10px; border: 1px solid var(--vscode-panel-border, #454545); border-radius: 3px; }
   details.sql summary { cursor: pointer; padding: 4px 8px; font-size: 12px; user-select: none; background: var(--vscode-editorWidget-background, #252526); }
   details.sql pre { margin: 0; padding: 8px; max-height: 240px; overflow: auto; font-family: var(--vscode-editor-font-family, monospace); font-size: var(--vscode-editor-font-size, 12px); white-space: pre; }
+  .progress { margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--vscode-panel-border, #454545); border-radius: 3px; background: var(--vscode-editorWidget-background, #252526); font-size: 12px; }
+  .progress .bar { height: 6px; border-radius: 3px; overflow: hidden; background: rgba(128, 128, 128, 0.25); }
+  .progress .fill { height: 100%; width: 0; background: var(--vscode-progressBar-background, #0e70c0); transition: width 0.1s linear; }
+  .progress .now { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 4px; }
+  .progress .now .stage { font-weight: 600; }
+  .progress .now .clock { font-variant-numeric: tabular-nums; opacity: 0.8; white-space: nowrap; }
+  .progress ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .progress li { display: flex; gap: 6px; opacity: 0.5; font-variant-numeric: tabular-nums; }
+  .progress li.done { opacity: 0.8; }
+  .progress li.active { opacity: 1; }
+  .progress li .mark { width: 1em; text-align: center; }
+  .timing { font-size: 11px; opacity: 0.6; margin: -4px 0 8px; font-variant-numeric: tabular-nums; }
   table { border-collapse: collapse; width: 100%; }
   th, td { border: 1px solid var(--vscode-panel-border, #454545); padding: 4px 8px; text-align: left; font-size: 12px; white-space: nowrap; }
   th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -272,7 +320,13 @@ function render(title: string): string {
 <body>
 <h1>Preview: ${escapeHtml(title)} <span class="badge" id="badge"></span></h1>
 <details class="sql" id="sql" hidden><summary id="sql-summary"></summary><pre id="sql-text"></pre></details>
-<div id="content"><div class="message">Running preview…</div></div>
+<div class="progress" id="progress" hidden>
+  <div class="bar"><div class="fill" id="progress-fill"></div></div>
+  <div class="now"><span class="stage" id="progress-stage"></span><span class="clock" id="progress-clock"></span></div>
+  <ol id="progress-stages"></ol>
+</div>
+<div class="timing" id="timing" hidden></div>
+<div id="content"></div>
 <div class="footer" id="footer" hidden>
   <span class="status" id="status"></span>
   <span id="more-controls">
@@ -310,16 +364,95 @@ function render(title: string): string {
     if (msg.type === 'loading') {
       loading = true;
       $('badge').textContent = 'limit ' + msg.limit + ' · running…';
-      if (!data) { $('content').innerHTML = '<div class="message">Running preview…</div>'; }
+      startProgress(msg.stages, msg.expectedMs);
       updateFooter();
+    } else if (msg.type === 'stage') {
+      advanceStage(msg.index);
     } else if (msg.type === 'result') {
       loading = false;
+      stopProgress(msg.stageMs, msg.totalMs);
       data = msg;
       $('badge').textContent = 'limit ' + msg.limit;
       renderSql(msg.sql);
       renderResult();
     }
   });
+
+  // --- progress: which dbt stage is running, and for how long -------------
+  let progress = null; // { stages, expected, started, stageStarts, current, timer }
+
+  function secs(ms) { return (ms / 1000).toFixed(1) + ' s'; }
+
+  function startProgress(stages, expected) {
+    if (progress) clearInterval(progress.timer);
+    const now = performance.now();
+    progress = { stages, expected, started: now, stageStarts: [now], current: 0, timer: 0 };
+    const list = $('progress-stages');
+    list.textContent = '';
+    stages.forEach((label) => {
+      const li = document.createElement('li');
+      const mark = document.createElement('span');
+      mark.className = 'mark';
+      const text = document.createElement('span');
+      text.textContent = label;
+      const time = document.createElement('span');
+      time.className = 'time';
+      li.appendChild(mark);
+      li.appendChild(text);
+      li.appendChild(time);
+      list.appendChild(li);
+    });
+    $('progress').hidden = false;
+    $('timing').hidden = true;
+    progress.timer = setInterval(tickProgress, 100);
+    tickProgress();
+  }
+
+  function advanceStage(index) {
+    if (!progress || index <= progress.current) return;
+    const now = performance.now();
+    for (let i = progress.current + 1; i <= index; i++) progress.stageStarts[i] = now;
+    progress.current = index;
+    tickProgress();
+  }
+
+  function tickProgress() {
+    if (!progress) return;
+    const now = performance.now();
+    const p = progress;
+    const total = p.expected.reduce((a, b) => a + b, 0) || 1;
+    let before = 0;
+    for (let i = 0; i < p.current; i++) before += p.expected[i];
+    const inStage = now - p.stageStarts[p.current];
+    // Creep towards the end of the current stage, never past 95% of it, so an
+    // overrunning stage stalls instead of the bar claiming to be finished.
+    const partial = Math.min(inStage, p.expected[p.current] * 0.95);
+    const pct = Math.min(99, ((before + partial) / total) * 100);
+    $('progress-fill').style.width = pct.toFixed(1) + '%';
+    $('progress-stage').textContent =
+      (p.current + 1) + '/' + p.stages.length + ' · ' + p.stages[p.current] + '… ' + secs(inStage);
+    $('progress-clock').textContent = 'total ' + secs(now - p.started) + ' · usually ~' + secs(total);
+    const items = $('progress-stages').children;
+    for (let i = 0; i < items.length; i++) {
+      const li = items[i];
+      const started = p.stageStarts[i];
+      const next = p.stageStarts.slice(i + 1).find((t) => t !== undefined);
+      li.className = i < p.current ? 'done' : i === p.current ? 'active' : '';
+      li.querySelector('.mark').textContent = i < p.current ? '✓' : i === p.current ? '●' : '○';
+      li.querySelector('.time').textContent =
+        started === undefined ? '' : secs((i < p.current && next !== undefined ? next : now) - started);
+    }
+  }
+
+  function stopProgress(stageMs, totalMs) {
+    if (progress) clearInterval(progress.timer);
+    const stages = progress ? progress.stages : [];
+    progress = null;
+    $('progress').hidden = true;
+    const parts = stages.map((label, i) => label + ' ' + secs(stageMs[i] || 0));
+    $('timing').textContent = 'dbt took ' + secs(totalMs) + ' — ' + parts.join(' · ');
+    $('timing').hidden = false;
+  }
 
   function renderSql(sql) {
     const box = $('sql');

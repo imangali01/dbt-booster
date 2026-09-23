@@ -14,8 +14,9 @@ export function runDbtShow(
   modelName: string,
   cwd: string,
   limit: number = DEFAULT_PREVIEW_LIMIT,
+  onOutput?: (text: string) => void,
 ): Promise<string> {
-  return runShow(['--select', modelName], cwd, limit);
+  return runShow(['--select', modelName], cwd, limit, onOutput);
 }
 
 /**
@@ -32,11 +33,18 @@ export function runDbtShowInline(
   sql: string,
   cwd: string,
   limit: number = DEFAULT_PREVIEW_LIMIT,
+  onOutput?: (text: string) => void,
 ): Promise<string> {
-  return runShow(['--inline', sql], cwd, limit);
+  return runShow(['--inline', sql], cwd, limit, onOutput);
 }
 
-async function runShow(selector: string[], cwd: string, limit: number): Promise<string> {
-  const { output } = await runDbtCaptured(showArgs(selector, limit), cwd);
+/** `onOutput` streams dbt's output as it arrives, for Preview's progress bar. */
+async function runShow(
+  selector: string[],
+  cwd: string,
+  limit: number,
+  onOutput?: (text: string) => void,
+): Promise<string> {
+  const { output } = await runDbtCaptured(showArgs(selector, limit), cwd, onOutput);
   return output;
 }

@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { StringDecoder } from 'string_decoder';
 import { describeArgs, splitCommand } from './dbtArgs';
 import { dbtLog } from './dbtLog';
 import { dbtCommand } from './dbtTerminal';
@@ -33,8 +34,16 @@ export interface CapturedRun {
  * real problem. Spawning the program directly gives a clean Node-level
  * `ENOENT` we can turn into an actionable message instead. It also means a
  * multi-line `--inline` payload needs no quoting or escaping at all.
+ *
+ * `onOutput`, when given, receives dbt's output as it arrives (decoded
+ * incrementally, so a multi-byte character split across chunks stays whole) —
+ * Preview reads its progress off it.
  */
-export function runDbtCaptured(args: string[], cwd: string): Promise<CapturedRun> {
+export function runDbtCaptured(
+  args: string[],
+  cwd: string,
+  onOutput?: (text: string) => void,
+): Promise<CapturedRun> {
   return new Promise((resolve) => {
     const [program, leadingArgs] = splitCommand(dbtCommand());
     const fullArgs = [...leadingArgs, ...args];
@@ -79,9 +88,13 @@ export function runDbtCaptured(args: string[], cwd: string): Promise<CapturedRun
     // its own can split a multi-byte UTF-8 character across a chunk boundary
     // and corrupt it.
     const chunks: Buffer[] = [];
+    const decoder = onOutput ? new StringDecoder('utf8') : undefined;
     const collect = (chunk: Buffer): void => {
       firstByteMs ??= Date.now() - started;
       chunks.push(chunk);
+      if (decoder) {
+        onOutput?.(decoder.write(chunk));
+      }
     };
     child.stdout?.on('data', collect);
     child.stderr?.on('data', collect);

@@ -37,7 +37,8 @@ These were settled with the user during a grilling session. Honour them.
   `target/compiled/…`, else the model source; for inline previews dbt's compiled
   `…/from remote system.sql/sql/inline_query`, else the raw selection — v0.0.29), an
   Excel-style ▾ filter per column header (checklist of the column's distinct values with counts,
-  search, select-all, sort, Clear, OK/Cancel — v0.0.31), and the "+ N more rows" control. The SQL block starts collapsed (v0.0.30).
+  search, select-all, sort, Clear, OK/Cancel — v0.0.31), the "+ N more rows" control, and a
+  progress bar with the live dbt stage and per-stage seconds (ticket 25). The SQL block starts collapsed (v0.0.30).
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
@@ -86,7 +87,7 @@ src/
   dbtArgs.ts              PURE  splitCommand (`uv run dbt` → program + leading args),
                                 describeArgs (one readable, whitespace-collapsed, truncated line),
                                 BASE_FLAGS / SHOW_FLAGS + showArgs / terminalArgs (ticket 24)
-  dbtProcess.ts           GLUE  runDbtCaptured(args, cwd) — THE background dbt spawn: no shell
+  dbtProcess.ts           GLUE  runDbtCaptured(args, cwd, onOutput?) — THE background dbt spawn: no shell
                                 (see its doc comment), UTF-8 env, ENOENT hint; times every run and
                                 logs total + time-to-first-output
   timing.ts               PURE  formatDuration, formatTimingReport, explainDbtTimings — the four
@@ -110,6 +111,8 @@ src/
                                 Selected SQL", the one action that needs no manifest lookup;
                                 previewActive() — the Preview Data button: selection if any,
                                 else the whole model (ticket 22)
+  previewProgress.ts      PURE  PREVIEW_STAGES + stageFromOutput / stageDurations — which dbt
+                                stage a Preview is in, read off dbt's streamed log lines (ticket 25)
   previewFilter.ts        PURE  passesValueFilters / distinctValues (Excel-style column
                                 checklists; both embedded into the preview webview via toString —
                                 keep them self-contained), nextPreviewLimit, allRowsLoaded
@@ -221,6 +224,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 22 | Preview Data button previews the selection when there is one | ✅ done (v0.0.27) |
 | 23 | Preview panel — shown SQL, "load more" rows, column filters; no limit prompt | ✅ done (v0.0.28) |
 | 24 | Faster Preview — cheap dbt flags, picked from measurements | ✅ done (v0.0.32) |
+| 25 | Preview progress bar — live dbt stage + seconds | ✅ done (v0.0.33) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
