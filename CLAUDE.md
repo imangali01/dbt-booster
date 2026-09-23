@@ -46,7 +46,9 @@ These were settled with the user during a grilling session. Honour them.
   the selection when there is a non-blank one, and the whole model otherwise; the graph node
   context menu's Preview always previews the model.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
-  as a background process (not in the terminal) so its JSON output can be parsed.
+  as a background process (not in the terminal) so its JSON output can be parsed. Since ticket 26
+  terminal commands go through shell integration (`executeCommand` + `read()`) when the shell
+  offers it, driving a progress notification; without it they are typed as before.
 - **Lineage panel lives in the bottom Panel area** (next to Terminal / Problems), not the
   sidebar.
 - Node click opens the model file; **Shift-click re-centres** the graph.
@@ -80,7 +82,11 @@ src/
                                 ActiveModelTreeProvider base (refresh wiring only); Documentation
                                 nests schema.yml columns (via schemaYaml.ts) under the model row
   dbtTerminal.ts          GLUE  runDbt(args, cwd) — the shared `dbt-booster` terminal; dbtCommand();
-                                logs its command line (no timing — dbt reports its own there)
+                                runs via shell integration when available and shows a progress
+                                notification (stage, seconds, k/N nodes), then logs a per-stage
+                                timing line (ticket 26)
+  runProgress.ts          PURE  RUN_STAGES, advanceRunProgress (line reducer), runPercent,
+                                describeRunProgress, stripAnsi — terminal run progress (ticket 26)
   dbtLog.ts               GLUE  setDbtLog / dbtLog — the one output-channel sink for dbt
                                 invocations, in its own module so dbtTerminal and dbtProcess can
                                 both use it without an import cycle
@@ -225,6 +231,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 23 | Preview panel — shown SQL, "load more" rows, column filters; no limit prompt | ✅ done (v0.0.28) |
 | 24 | Faster Preview — cheap dbt flags, picked from measurements | ✅ done (v0.0.32) |
 | 25 | Preview progress bar — live dbt stage + seconds | ✅ done (v0.0.33) |
+| 26 | Run/Test/Build/parse progress notification (via terminal shell integration) | ✅ done (v0.0.34) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
