@@ -3,7 +3,12 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { DEFAULT_PREVIEW_LIMIT, runDbtShow, runDbtShowInline } from './dbtShow';
 import { numericColumns, parseDbtShowOutput } from './dbtShowParser';
-import { allRowsLoaded, matchesFilters, nextPreviewLimit } from './previewFilter';
+import {
+  allRowsLoaded,
+  distinctValues,
+  nextPreviewLimit,
+  passesValueFilters,
+} from './previewFilter';
 
 let panel: vscode.WebviewPanel | undefined;
 
@@ -223,13 +228,35 @@ function render(title: string): string {
   table { border-collapse: collapse; width: 100%; }
   th, td { border: 1px solid var(--vscode-panel-border, #454545); padding: 4px 8px; text-align: left; font-size: 12px; white-space: nowrap; }
   th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  thead th { background: var(--vscode-editorWidget-background, #252526); position: sticky; z-index: 1; }
-  thead tr.names th { top: 0; cursor: pointer; user-select: none; }
-  thead tr.names th:hover { background: var(--vscode-list-hoverBackground, #2a2d2e); }
-  thead tr.filters th { top: var(--names-height, 25px); padding: 2px 4px; }
-  th .arrow { opacity: 0.6; margin-left: 4px; }
-  tr.filters input { width: 100%; min-width: 60px; box-sizing: border-box; font: inherit; font-size: 11px; padding: 2px 4px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); }
-  tr.filters input:focus { outline: 1px solid var(--vscode-focusBorder); }
+  thead th { background: var(--vscode-editorWidget-background, #252526); position: sticky; top: 0; z-index: 1; padding-right: 4px; }
+  th .head { display: flex; align-items: center; gap: 4px; }
+  th.num .head { justify-content: flex-end; }
+  th .name { cursor: pointer; user-select: none; }
+  th .name:hover { text-decoration: underline; }
+  th .arrow { opacity: 0.6; }
+  th .filter-btn { font: inherit; font-size: 10px; line-height: 1; padding: 2px 4px; margin-left: auto; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 2px; cursor: pointer; opacity: 0.55; }
+  th.num .filter-btn { margin-left: 4px; }
+  th .filter-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.2)); }
+  th .filter-btn.active { opacity: 1; color: var(--vscode-button-foreground); background: var(--vscode-button-background); }
+  .filter-pop { position: fixed; z-index: 10; width: 260px; display: flex; flex-direction: column; gap: 6px; padding: 8px; font-size: 12px; background: var(--vscode-editorWidget-background, #252526); color: var(--vscode-editorWidget-foreground, inherit); border: 1px solid var(--vscode-editorWidget-border, #454545); border-radius: 3px; box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0,0,0,0.36)); }
+  .filter-pop .sorts { display: flex; gap: 4px; }
+  .filter-pop .sorts button { flex: 1; }
+  .filter-pop input[type=text] { font: inherit; padding: 3px 6px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); }
+  .filter-pop input[type=text]:focus { outline: 1px solid var(--vscode-focusBorder); }
+  .filter-pop .list { max-height: 260px; overflow: auto; border: 1px solid var(--vscode-panel-border, #454545); padding: 2px 0; }
+  .filter-pop label { display: flex; align-items: center; gap: 6px; padding: 2px 6px; cursor: pointer; white-space: nowrap; }
+  .filter-pop label:hover { background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.16)); }
+  .filter-pop label .text { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .filter-pop label .text.special { opacity: 0.6; font-style: italic; }
+  .filter-pop label .count { opacity: 0.5; font-variant-numeric: tabular-nums; }
+  .filter-pop .all { font-weight: 600; }
+  .filter-pop .actions { display: flex; gap: 4px; }
+  .filter-pop .actions .spacer { flex: 1; }
+  .filter-pop button { font: inherit; padding: 2px 10px; color: var(--vscode-button-secondaryForeground, inherit); background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.2)); border: none; border-radius: 2px; cursor: pointer; }
+  .filter-pop button:hover { background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.3)); }
+  .filter-pop button.primary { color: var(--vscode-button-foreground); background: var(--vscode-button-background); }
+  .filter-pop button.primary:hover { background: var(--vscode-button-hoverBackground); }
+  .filter-pop .empty { padding: 4px 6px; opacity: 0.6; }
   td.null { opacity: 0.45; font-style: italic; }
   tbody tr:nth-child(even) { background: rgba(128, 128, 128, 0.08); }
   tbody tr:hover { background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.16)); }
@@ -257,7 +284,8 @@ function render(title: string): string {
 <script nonce="${nonce}">
 (function () {
   const vscode = acquireVsCodeApi();
-  const matchesFilters = ${matchesFilters.toString()};
+  const passesValueFilters = ${passesValueFilters.toString()};
+  const distinctValues = ${distinctValues.toString()};
   const $ = (id) => document.getElementById(id);
   const SQL_KIND = { compiled: 'SQL — compiled (as run by dbt)', source: 'SQL — model source', selection: 'SQL — selection' };
 
@@ -266,7 +294,8 @@ function render(title: string): string {
   let sortCol = -1;          // index into data.columns
   let ascending = true;
   let sortName = null;       // column name, so sort survives a re-run
-  const filterByName = {};   // column name -> filter text
+  const excludedByName = {}; // column name -> values unticked in its filter checklist
+  let popup = null;          // the open filter dropdown, if any
 
   $('more').addEventListener('click', requestMore);
   $('more-count').addEventListener('keydown', (e) => { if (e.key === 'Enter') requestMore(); });
@@ -318,46 +347,206 @@ function render(title: string): string {
     }
     sortCol = sortName === null ? -1 : data.columns.indexOf(sortName);
 
+    closePopup();
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     const names = document.createElement('tr');
-    names.className = 'names';
-    const filters = document.createElement('tr');
-    filters.className = 'filters';
     data.columns.forEach((col, i) => {
       const th = document.createElement('th');
       if (data.numeric[i]) th.className = 'num';
-      th.textContent = col;
-      if (i === sortCol) appendArrow(th);
-      th.addEventListener('click', () => {
-        ascending = sortCol === i ? !ascending : true;
-        sortCol = i;
-        sortName = col;
-        names.querySelectorAll('.arrow').forEach((a) => a.remove());
-        appendArrow(th);
-        renderBody();
-      });
+      const head = document.createElement('div');
+      head.className = 'head';
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = col;
+      name.title = 'Sort';
+      name.addEventListener('click', () => setSort(i, sortCol === i ? !ascending : true));
+      head.appendChild(name);
+      if (i === sortCol) appendArrow(head);
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn' + ((excludedByName[col] || []).length ? ' active' : '');
+      btn.textContent = '▾';
+      btn.title = 'Filter';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); openPopup(i, btn); });
+      head.appendChild(btn);
+      th.appendChild(head);
       names.appendChild(th);
-
-      const fth = document.createElement('th');
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = 'filter';
-      input.value = filterByName[col] || '';
-      input.addEventListener('input', () => { filterByName[col] = input.value; renderBody(); });
-      fth.appendChild(input);
-      filters.appendChild(fth);
     });
     thead.appendChild(names);
-    thead.appendChild(filters);
     table.appendChild(thead);
     table.appendChild(document.createElement('tbody'));
     const wrap = document.createElement('div');
     wrap.className = 'table-wrap';
     wrap.appendChild(table);
     content.appendChild(wrap);
-    document.documentElement.style.setProperty('--names-height', names.getBoundingClientRect().height + 'px');
     renderBody();
+  }
+
+  function setSort(i, asc) {
+    sortCol = i;
+    sortName = data.columns[i];
+    ascending = asc;
+    renderResult();
+  }
+
+  /** Each column's excluded values, with column skipCol's left out (-1: none). */
+  function excludedList(skipCol) {
+    return data.columns.map((col, i) => (i === skipCol ? [] : excludedByName[col] || []));
+  }
+
+  function displayText(value) {
+    if (value === null) return '(NULL)';
+    if (value === '') return '(empty)';
+    return value;
+  }
+
+  function closePopup() {
+    if (popup) { popup.remove(); popup = null; }
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    if (popup && !popup.contains(e.target)) closePopup();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+
+  // Excel-style checklist of every value in column i (among the rows the other
+  // columns' filters keep), with search, select-all, sort, clear and OK/Cancel.
+  function openPopup(i, anchor) {
+    const wasThis = popup && popup.dataset.col === String(i);
+    closePopup();
+    if (wasThis) return;
+    const col = data.columns[i];
+    const others = excludedList(i);
+    const values = distinctValues(data.rows.filter((row) => passesValueFilters(row, others)), i);
+    const prior = excludedByName[col] || [];
+    const checked = values.map((v) => prior.indexOf(v.value) === -1);
+
+    const pop = document.createElement('div');
+    pop.className = 'filter-pop';
+    pop.dataset.col = String(i);
+
+    const sorts = document.createElement('div');
+    sorts.className = 'sorts';
+    [['Sort ▲', true], ['Sort ▼', false]].forEach((pair) => {
+      const b = document.createElement('button');
+      b.textContent = pair[0];
+      b.addEventListener('click', () => setSort(i, pair[1]));
+      sorts.appendChild(b);
+    });
+    pop.appendChild(sorts);
+
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.placeholder = 'Search';
+    pop.appendChild(search);
+
+    const list = document.createElement('div');
+    list.className = 'list';
+    pop.appendChild(list);
+
+    let visible = [];
+    let allBox = null;
+    const matchesSearch = (v) => {
+      const needle = search.value.trim().toLowerCase();
+      return needle === '' || displayText(v.value).toLowerCase().indexOf(needle) !== -1;
+    };
+    function drawList() {
+      visible = [];
+      values.forEach((v, k) => { if (matchesSearch(v)) visible.push(k); });
+      list.textContent = '';
+      allBox = null;
+      if (visible.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No matches';
+        list.appendChild(empty);
+        return;
+      }
+      const all = document.createElement('label');
+      all.className = 'all';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      all.appendChild(box);
+      const allText = document.createElement('span');
+      allText.className = 'text';
+      allText.textContent = search.value.trim() === '' ? '(Select all)' : '(Select all search results)';
+      all.appendChild(allText);
+      box.addEventListener('change', () => {
+        visible.forEach((k) => { checked[k] = box.checked; });
+        drawList();
+      });
+      list.appendChild(all);
+      allBox = box;
+      visible.forEach((k) => {
+        const v = values[k];
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = checked[k];
+        cb.addEventListener('change', () => { checked[k] = cb.checked; syncAll(); });
+        label.appendChild(cb);
+        const text = document.createElement('span');
+        text.className = 'text' + (v.value === null || v.value === '' ? ' special' : '');
+        text.textContent = displayText(v.value);
+        text.title = displayText(v.value);
+        label.appendChild(text);
+        const count = document.createElement('span');
+        count.className = 'count';
+        count.textContent = String(v.count);
+        label.appendChild(count);
+        list.appendChild(label);
+      });
+      syncAll();
+    }
+    function syncAll() {
+      if (!allBox) return;
+      const on = visible.filter((k) => checked[k]).length;
+      allBox.checked = on === visible.length;
+      allBox.indeterminate = on > 0 && on < visible.length;
+    }
+    search.addEventListener('input', drawList);
+    drawList();
+
+    function apply() {
+      // Values hidden by other columns' filters keep their earlier state;
+      // with a search typed, only ticked search results are kept (as in Excel).
+      const shown = values.map((v) => v.value);
+      const next = prior.filter((value) => shown.indexOf(value) === -1);
+      values.forEach((v, k) => {
+        if (!checked[k] || !matchesSearch(v)) next.push(v.value);
+      });
+      excludedByName[col] = next;
+      renderResult();
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const clear = document.createElement('button');
+    clear.textContent = 'Clear';
+    clear.title = 'Remove this column filter';
+    clear.addEventListener('click', () => { excludedByName[col] = []; renderResult(); });
+    actions.appendChild(clear);
+    const spacer = document.createElement('span');
+    spacer.className = 'spacer';
+    actions.appendChild(spacer);
+    const ok = document.createElement('button');
+    ok.className = 'primary';
+    ok.textContent = 'OK';
+    ok.addEventListener('click', apply);
+    actions.appendChild(ok);
+    const cancel = document.createElement('button');
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', closePopup);
+    actions.appendChild(cancel);
+    pop.appendChild(actions);
+    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
+
+    document.body.appendChild(pop);
+    popup = pop;
+    const r = anchor.getBoundingClientRect();
+    pop.style.left = Math.max(4, Math.min(r.left, window.innerWidth - pop.offsetWidth - 4)) + 'px';
+    pop.style.top = Math.max(4, Math.min(r.bottom + 2, window.innerHeight - pop.offsetHeight - 4)) + 'px';
+    search.focus();
   }
 
   function appendArrow(th) {
@@ -370,8 +559,7 @@ function render(title: string): string {
   function renderBody() {
     const tbody = document.querySelector('tbody');
     if (!tbody) return;
-    const active = data.columns.map((col) => filterByName[col] || '');
-    let rows = data.rows.filter((row) => matchesFilters(row, active));
+    let rows = data.rows.filter((row) => passesValueFilters(row, excludedList(-1)));
     if (sortCol >= 0) {
       const i = sortCol;
       rows = rows.slice().sort((a, b) => {

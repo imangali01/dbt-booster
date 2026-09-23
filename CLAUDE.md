@@ -35,8 +35,9 @@ These were settled with the user during a grilling session. Honour them.
   re-runs `dbt show` with a bigger limit (dbt has no offset).
 - **Preview panel** (ticket 23) shows the SQL that ran (compiled if this run refreshed
   `target/compiled/…`, else the model source; for inline previews dbt's compiled
-  `…/from remote system.sql/sql/inline_query`, else the raw selection — v0.0.29), per-column
-  filter boxes, and the "+ N more rows" control. The SQL block starts collapsed (v0.0.30).
+  `…/from remote system.sql/sql/inline_query`, else the raw selection — v0.0.29), an
+  Excel-style ▾ filter per column header (checklist of the column's distinct values with counts,
+  search, select-all, sort, Clear, OK/Cancel — v0.0.31), and the "+ N more rows" control. The SQL block starts collapsed (v0.0.30).
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
@@ -108,8 +109,9 @@ src/
                                 Selected SQL", the one action that needs no manifest lookup;
                                 previewActive() — the Preview Data button: selection if any,
                                 else the whole model (ticket 22)
-  previewFilter.ts        PURE  matchesFilters (embedded into the preview webview via toString —
-                                keep it self-contained), nextPreviewLimit, allRowsLoaded
+  previewFilter.ts        PURE  passesValueFilters / distinctValues (Excel-style column
+                                checklists; both embedded into the preview webview via toString —
+                                keep them self-contained), nextPreviewLimit, allRowsLoaded
   dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) / runDbtShowInline(sql, cwd, limit)
                                 — arg-building over dbtProcess for `dbt show --output json`, for
                                 Preview; DEFAULT_PREVIEW_LIMIT = 20
