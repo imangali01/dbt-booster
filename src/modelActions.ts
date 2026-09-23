@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { ManifestStore } from './manifestStore';
 import { runDbt } from './dbtTerminal';
-import { showPreview } from './previewPanel';
+import { showInlinePreview, showPreview } from './previewPanel';
 import { DEFAULT_PREVIEW_LIMIT } from './dbtShow';
+import { prepareInlineSql } from './sqlSelection';
 
 export type DbtAction = 'run' | 'test' | 'build' | 'preview';
 
@@ -48,10 +49,13 @@ export function performModelAction(action: DbtAction, name: string, projectRoot:
   }
 }
 
-/** Ask how many rows to preview (defaulting to {@link DEFAULT_PREVIEW_LIMIT}), then run it. */
-async function previewWithLimitPrompt(name: string, projectRoot: string): Promise<void> {
+/**
+ * Ask how many rows to preview, defaulting to {@link DEFAULT_PREVIEW_LIMIT}.
+ * Resolves `undefined` when the user cancels.
+ */
+async function promptRowLimit(title: string): Promise<number | undefined> {
   const entered = await vscode.window.showInputBox({
-    title: `dbt booster: Preview "${name}"`,
+    title,
     prompt: 'Row limit',
     value: String(DEFAULT_PREVIEW_LIMIT),
     validateInput: (value) => {
@@ -59,10 +63,41 @@ async function previewWithLimitPrompt(name: string, projectRoot: string): Promis
       return Number.isInteger(n) && n > 0 ? undefined : 'Enter a positive whole number';
     },
   });
-  if (entered === undefined) {
-    return; // cancelled
+  return entered === undefined ? undefined : Number(entered);
+}
+
+/** Ask how many rows to preview, then run it. */
+async function previewWithLimitPrompt(name: string, projectRoot: string): Promise<void> {
+  const limit = await promptRowLimit(`dbt booster: Preview "${name}"`);
+  if (limit !== undefined) {
+    void showPreview(name, projectRoot, limit);
   }
-  void showPreview(name, projectRoot, Number(entered));
+}
+
+/**
+ * Preview the active editor's selection through `dbt show --inline`, with the
+ * same row-limit prompt the Preview button uses. Unlike the model actions this
+ * needs no manifest lookup — any SQL fragment runs, as long as we know which
+ * project to run it in.
+ */
+export async function previewActiveSelection(manifestStore: ManifestStore): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  const projectRoot = manifestStore.activeProjectRoot;
+  if (!editor || !projectRoot) {
+    void vscode.window.showErrorMessage(
+      'dbt booster: open a SQL file inside a dbt project to preview a selection.',
+    );
+    return;
+  }
+  const selection = prepareInlineSql(editor.document.getText(editor.selection));
+  if (!selection) {
+    void vscode.window.showErrorMessage('dbt booster: select some SQL to preview first.');
+    return;
+  }
+  const limit = await promptRowLimit(`dbt booster: Preview selection "${selection.label}"`);
+  if (limit !== undefined) {
+    void showInlinePreview(selection.sql, selection.label, projectRoot, limit);
+  }
 }
 
 /** Run `dbt <action> --select <selector>` for `name`, widened per `scope`. */

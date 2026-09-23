@@ -34,6 +34,10 @@ These were settled with the user during a grilling session. Honour them.
   pattern as ticket 10's exception): Preview prompts for it every run, defaulting to 20
   (`DEFAULT_PREVIEW_LIMIT` in `dbtShow.ts`).
 - **No CSV / download / export** anywhere in the preview UI.
+- **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
+  runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
+  Command Palette — no new title-bar button, no keybinding. It asks for a row limit exactly like
+  the Preview button does.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
   as a background process (not in the terminal) so its JSON output can be parsed.
 - **Lineage panel lives in the bottom Panel area** (next to Terminal / Problems), not the
@@ -79,15 +83,23 @@ src/
                                 that from the active editor for the title-bar buttons/palette;
                                 runModelWithScope/runActiveModelWithScope add the Run/Build "…
                                 With…" dropdowns' model / +model / model+ / +model+ selectors
-                                (GraphScope, ScopedAction — Run and Build buttons only)
-  dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) — `dbt show --output json` as a
-                                background child_process (not the terminal), for Preview;
+                                (GraphScope, ScopedAction — Run and Build buttons only);
+                                previewActiveSelection() — ticket 20's right-click "Preview
+                                Selected SQL", the one action that needs no manifest lookup
+  dbtShow.ts              GLUE  runDbtShow(model, cwd, limit) / runDbtShowInline(sql, cwd, limit)
+                                — `dbt show --output json` as a background child_process (not the
+                                terminal), for Preview; both share one no-shell spawn, which is
+                                what lets a multi-line --inline payload go as one argv entry;
                                 DEFAULT_PREVIEW_LIMIT = 20
+  sqlSelection.ts         PURE  prepareInlineSql() — an editor selection → { sql, label } for
+                                `dbt show --inline`: trim, drop a trailing `;`, reject blanks,
+                                label from the first non-comment line (INLINE_LABEL_MAX = 40)
   dbtShowParser.ts        PURE  parseDbtShowOutput() — extracts columns/rows from `dbt show` JSON
                                 output, tolerant of surrounding plain or structured-JSON log
                                 lines; numericColumns() — which columns to right-align
-  previewPanel.ts         GLUE  showPreview(model, root) — editor-area WebviewPanel, re-created per
-                                run, self-contained HTML/CSS/JS sortable table (no React needed)
+  previewPanel.ts         GLUE  showPreview(model, root) / showInlinePreview(sql, label, root) —
+                                editor-area WebviewPanel, re-created per run, self-contained
+                                HTML/CSS/JS sortable table (no React needed)
   lineagePanelProvider.ts GLUE  LineagePanelProvider — WebviewViewProvider for the panel;
                                 resolves the centre from the active editor, posts graph/empty,
                                 handles openFile / recentre / expand / nodeAction (run/test/build/
@@ -178,8 +190,9 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 17 | Docs editor — model tags | ✅ done (v0.0.19, config.tags bug fixed in v0.0.21, flow style in v0.0.22) |
 | 18 | Activity Bar — active-model context sections (tests/parents/children/docs) | ✅ done (v0.0.20) |
 | 19 | Run/Build With… — add `+model+`, extend the dropdown to Build | ✅ done (v0.0.24) |
+| 20 | Preview Data for a selected SQL fragment (`dbt show --inline`) | ✅ done (v0.0.25) |
 
-The original 8-ticket backlog is complete; 09–19 are post-backlog additions requested directly
+The original 8-ticket backlog is complete; 09–20 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage
 mojibake, then a follow-up once that turned out to be masking a "dbt not found" (ENOENT) case
 (see `src/dbtShow.ts`'s doc comment for why it no longer uses `shell: true`) — which is also the
@@ -187,8 +200,8 @@ motivation for ticket 11 (conda-activated envs are invisible to the Extension Ho
 fixes after ticket 17: model tags were written/read at a bare top-level `tags:` key, which dbt
 silently ignores — dbt only applies `config.tags` — fixed in v0.0.21; then tags were switched to
 flow style (`tags: [a, b]`, no bracket padding) in v0.0.22; then the Docs panel's yml path was
-made project-relative and clickable-to-open in v0.0.23. 89 vitest tests passing. Branch `main`,
-26 commits, nothing pushed. Anything past this point needs scope
+made project-relative and clickable-to-open in v0.0.23. 103 vitest tests passing. Branch `main`,
+27 commits, nothing pushed. Anything past this point needs scope
 agreed with the user first.
 
 ## Stack

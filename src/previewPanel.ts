@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runDbtShow } from './dbtShow';
+import { runDbtShow, runDbtShowInline } from './dbtShow';
 import { numericColumns, parseDbtShowOutput, type DbtShowResult } from './dbtShowParser';
 
 let panel: vscode.WebviewPanel | undefined;
@@ -9,15 +9,34 @@ let panel: vscode.WebviewPanel | undefined;
  * in a webview panel in the editor area. The panel is re-created (not reused)
  * on every run.
  */
-export async function showPreview(
+export function showPreview(
   modelName: string,
   projectRoot: string,
   limit: number,
 ): Promise<void> {
+  return showIn(modelName, limit, () => runDbtShow(modelName, projectRoot, limit));
+}
+
+/**
+ * The same panel, for an editor selection rather than a whole model: `sql` is
+ * run through `dbt show --inline` and `label` (a short one-line summary of the
+ * selection) titles the panel.
+ */
+export function showInlinePreview(
+  sql: string,
+  label: string,
+  projectRoot: string,
+  limit: number,
+): Promise<void> {
+  return showIn(label, limit, () => runDbtShowInline(sql, projectRoot, limit));
+}
+
+/** Open the single preview panel on `title`, then fill it with `run`'s output. */
+async function showIn(title: string, limit: number, run: () => Promise<string>): Promise<void> {
   panel?.dispose();
   const current = vscode.window.createWebviewPanel(
     'dbtBooster.preview',
-    `Preview: ${modelName}`,
+    `Preview: ${title}`,
     vscode.ViewColumn.Active,
     { enableScripts: true, retainContextWhenHidden: true },
   );
@@ -27,18 +46,18 @@ export async function showPreview(
       panel = undefined;
     }
   });
-  current.webview.html = render(modelName, limit, undefined, 'Running preview…');
+  current.webview.html = render(title, limit, undefined, 'Running preview…');
 
-  const raw = await runDbtShow(modelName, projectRoot, limit);
+  const raw = await run();
   if (panel !== current) {
     return; // superseded by a newer preview or closed while dbt was running
   }
   const result = parseDbtShowOutput(raw);
-  current.webview.html = render(modelName, limit, result);
+  current.webview.html = render(title, limit, result);
 }
 
 function render(
-  modelName: string,
+  title: string,
   limit: number,
   result: DbtShowResult | undefined,
   loading?: string,
@@ -51,7 +70,7 @@ function render(
 <meta charset="UTF-8" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Preview: ${escapeHtml(modelName)}</title>
+<title>Preview: ${escapeHtml(title)}</title>
 <style>
   body { margin: 0; padding: 12px 16px; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size, 13px); color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }
   h1 { font-size: 13px; font-weight: 600; margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px; }
@@ -70,7 +89,7 @@ function render(
 </style>
 </head>
 <body>
-<h1>Preview: ${escapeHtml(modelName)} <span class="limit-badge">limit ${limit}</span></h1>
+<h1>Preview: ${escapeHtml(title)} <span class="limit-badge">limit ${limit}</span></h1>
 ${body}
 <script nonce="${nonce}">
 (function () {

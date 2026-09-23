@@ -12,7 +12,11 @@ import {
   ParentModelsProvider,
 } from './activeModelProviders';
 import { disposeDbtTerminal, runDbt } from './dbtTerminal';
-import { runActiveModelAction, runActiveModelWithScope } from './modelActions';
+import {
+  previewActiveSelection,
+  runActiveModelAction,
+  runActiveModelWithScope,
+} from './modelActions';
 import { pickPythonEnvironment } from './pythonEnvironmentPicker';
 import { describeDbtPath } from './pythonEnvironments';
 
@@ -149,6 +153,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ),
     vscode.commands.registerCommand('dbtBooster.previewData', () =>
       runActiveModelAction('preview', manifestStore),
+    ),
+    vscode.commands.registerCommand('dbtBooster.previewSelectedSql', () =>
+      previewActiveSelection(manifestStore),
     ),
     vscode.commands.registerCommand('dbtBooster.selectPythonEnvironment', () =>
       pickPythonEnvironment(registry.allRoots),
