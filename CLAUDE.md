@@ -42,7 +42,9 @@ These were settled with the user during a grilling session. Honour them.
 - **No CSV / download / export** anywhere in the preview UI.
 - **Preview has a second entry point** (ticket 20): right-clicking a selection in a `.sql` file
   runs it through `dbt show --inline`. It is reachable only from the editor context menu and the
-  Command Palette — no new title-bar button, no keybinding. Since ticket 22 the title-bar **Preview Data** button also previews
+  Command Palette — no new title-bar button, no keybinding. The context-menu entry is a twin
+  command, `dbtBooster.previewSelectedSqlMenu`, titled "▦ Preview Selected SQL" (menus never render
+  codicons) and hidden from the Palette (ticket 29). Since ticket 22 the title-bar **Preview Data** button also previews
   the selection when there is a non-blank one, and the whole model otherwise; the graph node
   context menu's Preview always previews the model.
 - **One reused integrated terminal** named `dbt-booster` for Run/Test/Build/parse. Preview runs
@@ -239,6 +241,7 @@ channel shows an activation line; the Lineage panel renders for `models/orders.s
 | 26 | Run/Test/Build/parse progress notification (via terminal shell integration) | ✅ done (v0.0.34) |
 | 27 | No false "manifest.json not found" prompts (debounce + retry mid-write reads) | ✅ done (v0.0.35) |
 | 28 | Visible text progress bar in the Run/Test/Build notification | ✅ done (v0.0.36) |
+| 29 | "▦" marker on the right-click Preview Selected SQL item | ✅ done (v0.0.37) |
 
 The original 8-ticket backlog is complete; 09–21 are post-backlog additions requested directly
 by the user. Also since ticket 08: two fixes to Preview's dbt-launch path — Windows codepage

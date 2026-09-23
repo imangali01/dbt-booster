@@ -161,6 +161,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dbtBooster.previewSelectedSql', () =>
       previewActiveSelection(manifestStore),
     ),
+    // The editor right-click menu's twin of previewSelectedSql: context menus
+    // never render command icons, so its title carries a ▦ instead. Hidden
+    // from the Command Palette, where the plain command already appears.
+    vscode.commands.registerCommand('dbtBooster.previewSelectedSqlMenu', () =>
+      previewActiveSelection(manifestStore),
+    ),
     vscode.commands.registerCommand('dbtBooster.selectPythonEnvironment', () =>
       pickPythonEnvironment(registry.allRoots),
     ),

@@ -2,7 +2,7 @@
   "name": "dbt-booster",
   "displayName": "dbt booster",
   "description": "Lineage graph and one-click run / test / build / preview for dbt models.",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "license": "MIT",
   "icon": "media/dbt-logo.png",
   "publisher": "imangali01",
@@ -104,6 +104,11 @@
         "icon": "$(table)"
       },
       {
+        "command": "dbtBooster.previewSelectedSqlMenu",
+        "title": "▦ Preview Selected SQL",
+        "category": "dbt booster"
+      },
+      {
         "command": "dbtBooster.selectPythonEnvironment",
         "title": "Select Python Environment",
         "category": "dbt booster",
@@ -179,6 +184,10 @@
           "when": "dbtBooster.projectDetected"
         },
         {
+          "command": "dbtBooster.previewSelectedSqlMenu",
+          "when": "false"
+        },
+        {
           "command": "dbtBooster.selectPythonEnvironment",
           "when": "dbtBooster.projectDetected"
         },
@@ -196,7 +205,7 @@
       ],
       "editor/context": [
         {
-          "command": "dbtBooster.previewSelectedSql",
+          "command": "dbtBooster.previewSelectedSqlMenu",
           "when": "editorHasSelection && resourceExtname == .sql && dbtBooster.projectDetected",
           "group": "dbtBooster@1"
         }
