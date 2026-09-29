@@ -8,6 +8,22 @@ No AI assistant, no telemetry, no cloud account. It reads your project's
 `target/manifest.json` and runs your own `dbt` CLI, which resolves `profiles.yml` the way it
 normally does.
 
+## What you get in the window
+
+![Where everything lives: Activity Bar tab, editor title-bar buttons, terminal, Python environment in the status bar](media/screenshots/overview.png)
+
+1. The **dbt booster** tab in the Activity Bar.
+2. Its views for the open model: Model Tests, Parent Models, Children Models, Documentation, Project.
+3. **Run**, 4. **Run With…** (model, `+model`, `model+`, `+model+`).
+5. **Test**.
+6. **Build**, 7. **Build With…** (same four scopes).
+8. **Preview Data** — the selection if there is one, otherwise the whole model.
+9. The **dbt-booster** terminal that Run / Test / Build write to.
+10. **Lineage** and **Docs** tabs in the bottom panel, next to Terminal.
+11. The Python environment in the status bar (bottom right): click it to pick the env dbt runs in.
+
+The buttons appear in the title bar of any `.sql` file inside a dbt project.
+
 ## Lineage graph
 
 Open a model and the **Lineage** panel (bottom Panel area, next to Terminal) shows two levels up
