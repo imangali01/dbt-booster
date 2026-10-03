@@ -1,12 +1,28 @@
+<div align="center">
+
+<img src="media/dbt-logo.png" alt="dbt booster" width="160" />
+
 # dbt booster
 
-A lean VS Code extension for working with [dbt](https://www.getdbt.com/) projects: a lineage
-graph for the model you are editing, one-click **Run / Test / Build / Preview**, a data preview
-with Excel-style filters, and a `schema.yml` docs editor.
+**Lineage graph and one-click Run / Test / Build / Preview** — a lean VS Code extension for dbt projects.
 
-No AI assistant, no telemetry, no cloud account. It reads your project's
-`target/manifest.json` and runs your own `dbt` CLI, which resolves `profiles.yml` the way it
-normally does.
+[![VS Code](https://img.shields.io/badge/VS%20Code-%E2%89%A5%201.93-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![dbt](https://img.shields.io/badge/for-dbt-FF694B?logo=dbt&logoColor=white)](https://www.getdbt.com/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+</div>
+
+---
+
+## ✨ Features
+
+- 🕸️ **Lineage graph** — an interactive dependency graph for the model you are editing, in the bottom panel.
+- ▶️ **One-click Run / Test / Build / Preview** — from the editor title bar or by right-clicking a graph node.
+- 🎯 **Run With…** — the model, `+model`, `model+` or `+model+`.
+- 🔎 **Data preview** — rows in a table with Excel-style column filters; works on a selected SQL fragment too.
+- 📝 **Docs editor** — edit `schema.yml` descriptions, tags, columns and tests in a form.
+- 🔒 **No AI, no telemetry, no cloud account** — it reads `target/manifest.json` and runs your own `dbt` CLI, which resolves `profiles.yml` as usual.
 
 ## What you get in the window
 
